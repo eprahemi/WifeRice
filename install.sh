@@ -3,10 +3,9 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.0.0" # Update this string whenever you push a new version to GitHub
+DOTS_VERSION="1.0.1"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
-# Ensure state directory exists
 mkdir -p "$(dirname "$VERSION_FILE")"
 
 if [ -f "$VERSION_FILE" ]; then
@@ -81,16 +80,31 @@ fi
 
 case $OS in
     arch|endeavouros|manjaro|cachyos)
-        PKG_MANAGER="sudo pacman -S --noconfirm --needed"
         PKGS=("${ARCH_PKGS[@]}")
+        
+        # 1. Ensure basic pacman tools are present
         if ! command -v fzf &> /dev/null || ! command -v lspci &> /dev/null; then
             echo -e "${C_CYAN}Bootstrapping TUI dependencies (fzf, pciutils)...${RESET}"
             sudo pacman -Sy --noconfirm --needed fzf pciutils > /dev/null 2>&1
         fi
+        
+        # 2. Automatically install 'yay' if no AUR helper is found on a clean system
+        if ! command -v yay &> /dev/null && ! command -v paru &> /dev/null; then
+            echo -e "${C_CYAN}Installing 'yay' (AUR helper) to fetch custom packages...${RESET}"
+            sudo pacman -S --noconfirm --needed base-devel git
+            git clone https://aur.archlinux.org/yay-bin.git /tmp/yay-bin > /dev/null 2>&1
+            (cd /tmp/yay-bin && makepkg -si --noconfirm > /dev/null 2>&1)
+            rm -rf /tmp/yay-bin
+        fi
+        
+        # 3. Set the correct package manager
         if command -v yay &> /dev/null; then
             PKG_MANAGER="yay -S --noconfirm --needed"
         elif command -v paru &> /dev/null; then
             PKG_MANAGER="paru -S --noconfirm --needed"
+        else
+            # Fallback if AUR compilation failed for some reason
+            PKG_MANAGER="sudo pacman -S --noconfirm --needed"
         fi
         ;;
     fedora)
@@ -346,8 +360,10 @@ echo -e "\n${C_CYAN}[ INFO ]${RESET} Setting up Dotfiles Repository..."
 REPO_URL="https://github.com/ilyamiro/imperative-dots.git"
 CLONE_DIR="$HOME/.hyprland-dots"
 
-if [ -d "$(pwd)/.config" ] && [ -d "$(pwd)/.local" ]; then
+# Check for a specific unique file so we don't mistake ~/.config for the repo
+if [ -f "$(pwd)/install.sh" ] && [ -d "$(pwd)/.config" ]; then
     REPO_DIR="$(pwd)"
+    echo "  -> Running from local repository at $REPO_DIR"
 else
     if [ -d "$CLONE_DIR" ]; then
         git -C "$CLONE_DIR" pull > /dev/null 2>&1
@@ -410,7 +426,7 @@ REPO_FONTS_DIR="$REPO_DIR/.local/share/fonts"
 mkdir -p "$TARGET_FONTS_DIR"
 
 if [ -d "$REPO_FONTS_DIR" ]; then
-    cp -r "$REPO_FONTS_DIR/"* "$TARGET_FONTS_DIR/"
+    cp -r "$REPO_FONTS_DIR/"* "$TARGET_FONTS_DIR/" 2>/dev/null || true
     if command -v fc-cache &> /dev/null; then
         fc-cache -f "$TARGET_FONTS_DIR"
         printf "  -> Font cache updated %-21s ${C_GREEN}[ OK ]${RESET}\n" ""
@@ -440,21 +456,25 @@ ZSH_RC="$HOME/.zshrc"
 WP_QML="$TARGET_CONFIG_DIR/hypr/scripts/quickshell/wallpaper/WallpaperPicker.qml"
 DIARY_MGR="$TARGET_CONFIG_DIR/hypr/scripts/quickshell/calendar/diary_manager.sh"
 
-# 1. Universal Monitor Setup
-sed -i 's/^monitor = .*/monitor = ,preferred,auto,1/' "$HYPR_CONF"
+if [ -f "$HYPR_CONF" ]; then
+    # 1. Universal Monitor Setup
+    sed -i 's/^monitor = .*/monitor = ,preferred,auto,1/' "$HYPR_CONF"
 
-# 2. Strip Personal App Keybindings
-sed -i '/exec, firefox/d' "$HYPR_CONF"
-sed -i '/exec, Telegram/d' "$HYPR_CONF"
-sed -i '/exec, obsidian/d' "$HYPR_CONF"
+    # 2. Strip Personal App Keybindings
+    sed -i '/exec, firefox/d' "$HYPR_CONF"
+    sed -i '/exec, Telegram/d' "$HYPR_CONF"
+    sed -i '/exec, obsidian/d' "$HYPR_CONF"
 
-# 3. Inject SwayOSD Autostart
-if [ "$INSTALL_SWAYOSD" = true ]; then
-    sed -i '/^exec-once = swww-daemon/a exec-once = swayosd-server --top-margin 0.9 --style ~/.config/swayosd/style.css' "$HYPR_CONF"
+    # 3. Inject SwayOSD Autostart
+    if [ "$INSTALL_SWAYOSD" = true ]; then
+        sed -i '/^exec-once = swww-daemon/a exec-once = swayosd-server --top-margin 0.9 --style ~/.config/swayosd/style.css' "$HYPR_CONF"
+    fi
+
+    # 4. Inject Environment Variables for Quickshell
+    sed -i "/^env = NIXOS_OZONE_WL,1/a env = WALLPAPER_DIR,$WALLPAPER_DIR\nenv = SCRIPT_DIR,$HOME/.config/hypr/scripts" "$HYPR_CONF"
+else
+    echo -e "${C_RED}Warning: hyprland.conf not found at $HYPR_CONF${RESET}"
 fi
-
-# 4. Inject Environment Variables for Quickshell
-sed -i "/^env = NIXOS_OZONE_WL,1/a env = WALLPAPER_DIR,$WALLPAPER_DIR\nenv = SCRIPT_DIR,$HOME/.config/hypr/scripts" "$HYPR_CONF"
 
 # 5. Patch WallpaperPicker.qml dynamically
 if [ -f "$WP_QML" ]; then
