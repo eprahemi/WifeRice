@@ -336,7 +336,8 @@ for pkg in "${PKGS[@]}"; do
         fi
     else
         # Arch: Pipe 'yes ""' (Enter keystrokes) to automatically choose the default provider (1)
-        if yes "" | $PKG_MANAGER "$pkg"; then
+        # Limit CARGO_BUILD_JOBS to prevent OOM errors during heavy Rust compilations (like swayosd)
+        if yes "" | env CARGO_BUILD_JOBS=2 $PKG_MANAGER "$pkg"; then
             echo -e "\n${C_GREEN}[ OK ] Successfully installed ${pkg}${RESET}"
         else
             echo -e "\n${C_RED}[ FAILED ] Failed to install ${pkg}${RESET}"
