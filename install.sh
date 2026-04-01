@@ -32,7 +32,7 @@ C_MAGENTA="\e[35m"
 # ==============================================================================
 KB_SHORTCUT_DISPLAY="Not Set"
 KB_HYPR_CONF=""
-WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
+WALLPAPER_DIR="$HOME/Images/Wallpapers"
 WEATHER_API_KEY=""
 FAILED_PKGS=()
 
@@ -135,7 +135,8 @@ GPU_INFO=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | cut -d: -f3 | xargs |
 # ==============================================================================
 
 draw_header() {
-    clear
+    # Move cursor to top left (\033[H) instead of clearing screen to prevent flashing
+    printf "\033[H"
     printf "${BOLD}${C_CYAN}"
     cat << "EOF"
  ██╗██╗  ██╗   ██╗ █████╗ ███╗   ███╗██╗██████╗  ██████╗ 
@@ -146,15 +147,18 @@ draw_header() {
  ╚═╝╚══════╝╚═╝   ╚═╝  ╚═╝╚═╝    ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝ 
 EOF
     printf "${RESET}\n"
-    printf "${C_MAGENTA}=================================================================${RESET}\n"
-    printf "${BOLD} User:${RESET}            %s\n" "$USER_NAME"
-    printf "${BOLD} OS:  ${RESET}            %s\n" "$OS_NAME"
-    printf "${BOLD} CPU: ${RESET}            %s\n" "$CPU_INFO"
-    printf "${BOLD} GPU: ${RESET}            %s\n" "$GPU_INFO"
-    printf "${C_MAGENTA}-----------------------------------------------------------------${RESET}\n"
-    printf "${BOLD} Server Version:${RESET}  %s\n" "$DOTS_VERSION"
-    printf "${BOLD} Local Version: ${RESET}  %s\n" "$LOCAL_VERSION"
-    printf "${C_MAGENTA}=================================================================${RESET}\n\n"
+    # \033[K clears the rest of the line to prevent ghost text from previous frames
+    printf "\033[K${C_MAGENTA}=================================================================${RESET}\n"
+    printf "\033[K${BOLD} User:${RESET}            %s\n" "$USER_NAME"
+    printf "\033[K${BOLD} OS:  ${RESET}            %s\n" "$OS_NAME"
+    printf "\033[K${BOLD} CPU: ${RESET}            %s\n" "$CPU_INFO"
+    printf "\033[K${BOLD} GPU: ${RESET}            %s\n" "$GPU_INFO"
+    printf "\033[K${C_MAGENTA}-----------------------------------------------------------------${RESET}\n"
+    printf "\033[K${BOLD} Server Version:${RESET}  %s\n" "$DOTS_VERSION"
+    printf "\033[K${BOLD} Local Version: ${RESET}  %s\n" "$LOCAL_VERSION"
+    printf "\033[K${C_MAGENTA}=================================================================${RESET}\n\n"
+    # \033[J clears everything below the cursor so fzf renders cleanly
+    printf "\033[J"
 }
 
 manage_packages() {
@@ -163,6 +167,7 @@ manage_packages() {
         local action
         action=$(echo -e "1. View Packages to be Installed\n2. Add Custom Packages\n3. Back to Main Menu" | fzf \
             --layout=reverse \
+            --height=12 \
             --prompt="Package Manager > " \
             --header="Use ARROW KEYS and ENTER")
 
@@ -170,6 +175,7 @@ manage_packages() {
             *"1"*)
                 echo "${PKGS[@]}" | tr ' ' '\n' | fzf \
                     --layout=reverse \
+                    --height=25 \
                     --prompt="Current Packages > " \
                     --header="Press ESC or ENTER to return to menu."
                 ;;
@@ -189,9 +195,11 @@ manage_packages() {
 }
 
 set_keyboard_shortcut() {
+    draw_header
     local choice
     choice=$(echo -e "Alt + Shift\nSuper + Space\nCtrl + Shift\nCaps Lock" | fzf \
         --layout=reverse \
+        --height=12 \
         --prompt="Select Layout Toggle Shortcut > " \
         --header="Select the keybind to switch languages")
     
@@ -206,22 +214,9 @@ set_keyboard_shortcut() {
     fi
 }
 
-set_wallpaper_dir() {
-    local dir
-    dir=$(find "$HOME" -maxdepth 4 -type d -not -path "*/\.*" 2>/dev/null | fzf \
-        --layout=reverse \
-        --prompt="Select Wallpaper Directory > " \
-        --header="Use ARROW KEYS. ENTER to confirm. ESC to cancel." \
-        --preview="ls -la {} | head -n 20")
-    
-    if [[ -n "$dir" ]]; then
-        WALLPAPER_DIR="$dir"
-    fi
-}
-
 set_weather_api() {
     while true; do
-        clear
+        draw_header
         echo -e "${BOLD}${C_CYAN}=== OpenWeatherMap API Key Setup ===${RESET}"
         echo -e "${BOLD}${C_YELLOW}WARNING: Without this key, the weather widgets in your Quickshell setup WILL NOT WORK.${RESET}\n"
         echo -e "To get your free API key, follow these steps:"
@@ -248,7 +243,6 @@ set_weather_api() {
 }
 
 prompt_optional_features() {
-    clear
     draw_header
     echo -e "${BOLD}${C_CYAN}=== Optional Component Setup ===${RESET}\n"
 
@@ -282,6 +276,9 @@ prompt_optional_features() {
 # ==============================================================================
 # Main Menu Loop
 # ==============================================================================
+# Hard clear the screen once so \033[H works perfectly from the top
+clear
+
 while true; do
     draw_header
     
@@ -289,18 +286,18 @@ while true; do
     elif [[ "$WEATHER_API_KEY" == "Skipped" ]]; then API_DISPLAY="Skipped"
     else API_DISPLAY="Set (Hidden)"; fi
 
-    MENU_OPTION=$(echo -e "1. Manage Packages [${#PKGS[@]} queued]\n2. Set Keyboard Switcher [${KB_SHORTCUT_DISPLAY}]\n3. Set Wallpaper Dir [${WALLPAPER_DIR}]\n4. Set Weather API Key [${API_DISPLAY}]\n5. START INSTALLATION\n6. Exit" | fzf \
+    MENU_OPTION=$(echo -e "1. Manage Packages [${#PKGS[@]} queued]\n2. Set Keyboard Switcher [${KB_SHORTCUT_DISPLAY}]\n3. Set Weather API Key [${API_DISPLAY}]\n4. START INSTALLATION\n5. Exit" | fzf \
         --layout=reverse \
+        --height=12 \
         --prompt="Main Menu > " \
         --header="Navigate with ARROWS. Select with ENTER.")
 
     case "$MENU_OPTION" in
         *"1"*) manage_packages ;;
         *"2"*) set_keyboard_shortcut ;;
-        *"3"*) set_wallpaper_dir ;;
-        *"4"*) set_weather_api ;;
-        *"5"*) prompt_optional_features; break ;;
-        *"6"*) clear; exit 0 ;;
+        *"3"*) set_weather_api ;;
+        *"4"*) prompt_optional_features; break ;;
+        *"5"*) clear; exit 0 ;;
         *) exit 0 ;;
     esac
 done
@@ -374,7 +371,7 @@ if [[ "$OS" == "fedora" ]]; then
     done
 fi
 
-# --- 3. Repository Cloning ---
+# --- 3. Repository Cloning & Wallpapers ---
 echo -e "\n${C_CYAN}[ INFO ]${RESET} Setting up Dotfiles Repository..."
 REPO_URL="https://github.com/ilyamiro/imperative-dots.git"
 CLONE_DIR="$HOME/.hyprland-dots"
@@ -391,6 +388,23 @@ else
     fi
     REPO_DIR="$CLONE_DIR"
 fi
+
+echo -e "\n${C_CYAN}[ INFO ]${RESET} Fetching Wallpapers..."
+WALLPAPER_REPO="https://github.com/ilyamiro/shell-wallpapers.git"
+WALLPAPER_CLONE_DIR="/tmp/shell-wallpapers"
+
+mkdir -p "$WALLPAPER_DIR"
+if [ -d "$WALLPAPER_CLONE_DIR" ]; then
+    rm -rf "$WALLPAPER_CLONE_DIR"
+fi
+git clone "$WALLPAPER_REPO" "$WALLPAPER_CLONE_DIR" > /dev/null 2>&1
+if [ -d "$WALLPAPER_CLONE_DIR/images" ]; then
+    cp -r "$WALLPAPER_CLONE_DIR/images/"* "$WALLPAPER_DIR/" 2>/dev/null || true
+else
+    cp -r "$WALLPAPER_CLONE_DIR/"* "$WALLPAPER_DIR/" 2>/dev/null || true
+fi
+rm -rf "$WALLPAPER_CLONE_DIR"
+printf "  -> Wallpapers installed to %-12s ${C_GREEN}[ OK ]${RESET}\n" "$WALLPAPER_DIR"
 
 # --- 4. Symlinks & Backups ---
 echo -e "\n${C_CYAN}[ INFO ]${RESET} Applying Configurations & Backing Up Old Ones..."
