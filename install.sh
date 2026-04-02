@@ -226,10 +226,34 @@ manage_drivers() {
         echo -e "${BOLD}${C_CYAN}=== Hardware Driver Configuration ===${RESET}"
         echo -e "Detected GPU Vendor: ${BOLD}${C_YELLOW}$GPU_VENDOR${RESET}\n"
 
+        # Determine if a kernel driver is currently in use to prevent conflicts
+        local current_driver="None"
+        if command -v lsmod &> /dev/null; then
+            if lsmod | grep -wq nvidia; then
+                current_driver="nvidia"
+            elif lsmod | grep -wq nouveau; then
+                current_driver="nouveau"
+            elif lsmod | grep -Ewq "amdgpu|radeon"; then
+                current_driver="amd"
+            elif lsmod | grep -Ewq "i915|xe"; then
+                current_driver="intel"
+            fi
+        fi
+
         local options=""
         case "$GPU_VENDOR" in
             "NVIDIA")
-                options="1. Install Proprietary NVIDIA Drivers (Recommended for Gaming/Wayland)\n2. Install Nouveau (Open Source, Better VM compat)\n3. Skip Driver Installation"
+                if [[ "$current_driver" == "nouveau" ]]; then
+                    echo -e "${C_YELLOW}[!] Notice: Open-source 'nouveau' drivers are currently loaded.${RESET}"
+                    echo -e "${C_RED}[!] Proprietary installation is locked out to prevent initramfs conflicts/black screens.${RESET}\n"
+                    options="1. Update/Keep Nouveau (Open Source)\n2. Skip Driver Installation"
+                elif [[ "$current_driver" == "nvidia" ]]; then
+                    echo -e "${C_YELLOW}[!] Notice: Proprietary 'nvidia' drivers are currently loaded.${RESET}"
+                    echo -e "${C_RED}[!] Open-source installation is locked out to prevent conflicts.${RESET}\n"
+                    options="1. Update/Keep Proprietary NVIDIA Drivers\n2. Skip Driver Installation"
+                else
+                    options="1. Install Proprietary NVIDIA Drivers (Recommended for Gaming/Wayland)\n2. Install Nouveau (Open Source, Better VM compat)\n3. Skip Driver Installation"
+                fi
                 ;;
             "AMD")
                 options="1. Install AMD Mesa & Vulkan Drivers (RADV)\n2. Skip Driver Installation"
