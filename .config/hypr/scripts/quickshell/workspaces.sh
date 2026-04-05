@@ -9,8 +9,10 @@ if [ -f "$BT_PID_FILE" ]; then
     rm -f "$BT_PID_FILE"
 fi
 
-# Ensure bluetooth scan is explicitly turned off
-bluetoothctl scan off > /dev/null 2>&1
+# THE FIX: Run this in the background and add a timeout!
+# If the bluetooth daemon isn't enabled on a fresh Arch install, 
+# bluetoothctl hangs forever waiting for dbus. This prevents the lockup.
+(timeout 2 bluetoothctl scan off > /dev/null 2>&1) &
 # ---------------------------------------------
 
 # Configuration: How many workspaces do you want to show?
