@@ -1064,9 +1064,14 @@ Item {
 
                         if (monitorsModel.count === 0) return;
 
+                        let configLines = [];
+
                         if (monitorsModel.count === 1) {
                             let mon = monitorsModel.get(0);
                             let monitorStr = mon.name + "," + mon.resW + "x" + mon.resH + "@" + mon.rate + ",0x0," + mon.sysScale;
+                            
+                            configLines.push("monitor = " + monitorStr);
+                            
                             Quickshell.execDetached(["notify-send", "Display Update", "Applied: " + mon.resW + "x" + mon.resH + " @ " + mon.rate + "Hz"]);
                             Quickshell.execDetached(["sh", "-c", "hyprctl keyword monitor " + monitorStr]);
                         } else {
@@ -1142,17 +1147,23 @@ Item {
                                 r.y = Math.round(r.y - finalMinY);
                                 
                                 let monitorStr = r.name + "," + r.resW + "x" + r.resH + "@" + r.rate + "," + r.x + "x" + r.y + "," + r.sysScale;
+                                
+                                configLines.push("monitor = " + monitorStr);
                                 batchCmds.push("keyword monitor " + monitorStr);
                                 summaryString += r.name + " ";
                             }
                             
                             let fullCommand = "hyprctl --batch '" + batchCmds.join(" ; ") + "'";
-                            
                             let postReloadCmd = "awww kill ; sleep 0.1 ; awww-daemon &";
                             
                             Quickshell.execDetached(["sh", "-c", fullCommand + " ; " + postReloadCmd]);
                             Quickshell.execDetached(["notify-send", "Display Update", "Applied layout for: " + summaryString]);
                         }
+                        
+                        // ========== PERSIST TO HYPRLAND.CONF ==========
+                        let configString = configLines.join("\\n");
+                        let awkCmd = `awk 'BEGIN {p=0} /^monitor[ \\t]*=/ {next} /◈ MONITORS/ {p=1} p==1 && /^# ━/ {print; print "\\n${configString}"; p=0; next} {print}' ~/.config/hypr/hyprland.conf > /tmp/hconf && mv /tmp/hconf ~/.config/hypr/hyprland.conf`;
+                        Quickshell.execDetached(["sh", "-c", awkCmd]);
                     }
                 }
             }
