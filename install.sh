@@ -3,13 +3,8 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.0.17"
+DOTS_VERSION="1.0.16-1"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
-
-# ==============================================================================
-# Analytics Configuration
-# ==============================================================================
-DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1491876148597231697/Oey9qT0hMXiYdvl-px1rm356ZUH9JenrSMaxsV8zpr8Lad1Obtrkgi8AkFi4NlV2Uznk"
 
 # Global Variables & Initial States (Defaults)
 WALLPAPER_DIR="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Wallpapers"
@@ -166,92 +161,35 @@ elif echo "$GPU_INFO" | grep -qi "vmware\|virtualbox\|qxl\|virtio\|bochs"; then
 fi
 
 # ==============================================================================
-# Telemetry Function
+# Telemetry Function (Secure Serverless Method)
 # ==============================================================================
+WORKER_URL="https://dots-telemetry.ilyamiro-work.workers.dev"
+
 send_telemetry() {
-    if [[ -n "$DISCORD_WEBHOOK_URL" && "$DISCORD_WEBHOOK_URL" != "YOUR_WEBHOOK_URL_HERE" ]]; then
+    if [[ -n "$WORKER_URL" && "$WORKER_URL" != *"YOUR_USERNAME"* ]]; then
         
-        # --- NEW ANONYMOUS DATA GATHERING ---
-        
-        # 1. Fetch country via free API (Max timeout of 3 seconds so it doesn't hang offline users)
-        local country=$(curl -s -m 3 https://ipapi.co/country_name || echo "Unknown")
-        [[ -z "$country" ]] && country="Unknown"
-        
-        # 2. Get Total RAM (Formatted cleanly to GB)
         local ram=$(awk '/MemTotal/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "Unknown")
-        
-        # 3. Get Kernel Version
         local kernel=$(uname -r 2>/dev/null || echo "Unknown")
-        
-        # 4. Get Current Desktop Environment (What they are launching the script from)
         local current_de=${XDG_CURRENT_DESKTOP:-"TTY / Unknown"}
 
-        # Escape potential problematic characters in JSON
-        local safe_os=${OS_NAME//\"/\\\"}
-        local safe_cpu=${CPU_INFO//\"/\\\"}
-        local safe_gpu=${GPU_INFO//\"/\\\"}
-        
+        # Construct a simple, clean JSON object to send to the Worker
         local payload=$(cat <<EOF
 {
-  "content": null,
-  "embeds": [
-    {
-      "title": "🚀 Install Script Executed",
-      "color": 3447003,
-      "fields": [
-        {
-          "name": "Script Version",
-          "value": "${DOTS_VERSION}",
-          "inline": true
-        },
-        {
-          "name": "Country",
-          "value": "${country}",
-          "inline": true
-        },
-        {
-          "name": "OS",
-          "value": "${safe_os:-Unknown}",
-          "inline": true
-        },
-        {
-          "name": "Kernel",
-          "value": "${kernel}",
-          "inline": true
-        },
-        {
-          "name": "RAM",
-          "value": "${ram}",
-          "inline": true
-        },
-        {
-          "name": "Previous DE",
-          "value": "${current_de}",
-          "inline": true
-        },
-        {
-          "name": "CPU",
-          "value": "${safe_cpu:-Unknown}",
-          "inline": false
-        },
-        {
-          "name": "GPU",
-          "value": "${safe_gpu:-Unknown}",
-          "inline": false
-        }
-      ]
-    }
-  ]
+  "version": "${DOTS_VERSION}",
+  "os": "${OS_NAME//\"/\\\"}",
+  "kernel": "${kernel//\"/\\\"}",
+  "ram": "${ram//\"/\\\"}",
+  "de": "${current_de//\"/\\\"}",
+  "cpu": "${CPU_INFO//\"/\\\"}",
+  "gpu": "${GPU_INFO//\"/\\\"}"
 }
 EOF
 )
-        # Run curl in the background so it never blocks the script execution
-        curl -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL" -s -o /dev/null &
+        # Send data to Cloudflare Worker, which securely handles the Discord ping
+        curl -X POST -H "Content-Type: application/json" -d "$payload" "$WORKER_URL" -s -o /dev/null &
     fi
 }
 
-# Send the ping immediately after system info is gathered
-send_telemetry# Send the ping immediately after system info is gathered
 send_telemetry
 
 # ==============================================================================
