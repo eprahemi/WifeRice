@@ -116,6 +116,7 @@ ShellRoot {
                 property bool powerMenuOpen: false
                 property bool inputActive: false 
                 property bool isPlayingIntro: true
+                property bool isDesktop: false
                 
                 Component.onCompleted: {
                     introSequence.start();
@@ -138,6 +139,17 @@ ShellRoot {
                 // ---------------------------------------------------------
                 // BACKGROUND DATA POLLING 
                 // ---------------------------------------------------------
+
+                Process {
+                    id: chassisDetector
+                    running: true
+                    command: ["bash", "-c", "if ls /sys/class/power_supply/BAT* 1> /dev/null 2>&1; then echo 'laptop'; else echo 'desktop'; fi"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            screenRoot.isDesktop = (this.text.trim() === "desktop");
+                        }
+                    }
+                }
 
                 Process {
                     id: userPoller
@@ -175,6 +187,7 @@ ShellRoot {
 
                 Process {
                     id: batPoller
+                    running: !screenRoot.isDesktop
                     command: ["bash", "-c", "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -n1 || echo '100'; cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -n1 || echo 'AC'"]
                     stdout: StdioCollector {
                         onStreamFinished: {
@@ -186,7 +199,7 @@ ShellRoot {
                         }
                     }
                 }
-                Timer { interval: 5000; running: true; repeat: true; triggeredOnStart: true; onTriggered: batPoller.running = true }
+                Timer { interval: 5000; running: !screenRoot.isDesktop; repeat: true; triggeredOnStart: true; onTriggered: batPoller.running = true }
 
                 Process {
                     id: weatherPoller
@@ -710,6 +723,7 @@ ShellRoot {
                     // Battery Pill
                     Rectangle {
                         property bool isHovered: batMouse.containsMouse
+                        visible: !screenRoot.isDesktop
                         Layout.preferredHeight: 48 * screenRoot.sc
                         Layout.preferredWidth: batLayoutRow.implicitWidth + (36 * screenRoot.sc)
                         radius: height / 2
