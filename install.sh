@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.0.23-5"
+DOTS_VERSION="1.0.23-6"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # Global Variables & Initial States (Defaults)
@@ -1312,32 +1312,59 @@ if [ -f "$HYPR_CONF" ]; then
         sed -i "s/^ *kb_options =.*/    kb_options = /" "$HYPR_CONF"
     fi
 
-    # 1. Inject Environment Variables for Quickshell
-    # Clean up previous injections first so they don't stack up on multiple runs
-    sed -i '/env = WALLPAPER_DIR,/d' "$HYPR_CONF"
-    sed -i '/env = SCRIPT_DIR,/d' "$HYPR_CONF"
+    # ========================================================================
+    # BULLETPROOF HYPRLAND ENV INJECTION
+    # ========================================================================
+    echo -e "  -> Applying Environment Variables safely..."
     
-    # Inject safely right under NIXOS_OZONE_WL instead of matching the unicode block
-    sed -i "/env = NIXOS_OZONE_WL,1/a env = WALLPAPER_DIR,$WALLPAPER_DIR\nenv = SCRIPT_DIR,$HOME/.config/hypr/scripts" "$HYPR_CONF"
+    # 1. Clean up ANY previous injections using our marker block.
+    # This guarantees we never duplicate variables and never eat other config lines.
+    sed -i '/^# === DOTFILES AUTO-INJECTED ENV ===/,/^# === END DOTFILES ENV ===/d' "$HYPR_CONF"
     
-    # 2. Inject Advanced Nvidia specific configurations based on HARDWARE (Not driver choice)
+    # Also clean up legacy sed attempts just to be safe so they don't linger
+    sed -i '/env = WALLPAPER_DIR/d' "$HYPR_CONF"
+    sed -i '/env = SCRIPT_DIR/d' "$HYPR_CONF"
+
+    # 2. Start the new injection block at the absolute end of the file
+    cat <<EOF >> "$HYPR_CONF"
+
+# === DOTFILES AUTO-INJECTED ENV ===
+env = WALLPAPER_DIR,$WALLPAPER_DIR
+env = SCRIPT_DIR,$HOME/.config/hypr/scripts
+EOF
+
+    # 3. Inject NVIDIA specific config if detected
     if [ "$GPU_VENDOR" == "NVIDIA" ]; then
-        echo -e "  -> Applying NVIDIA-specific environment variables to Hyprland config..."
-        
-        # First, aggressively clean up old lines to prevent duplication on multiple script runs
-        sed -i '/env = LIBVA_DRIVER_NAME,nvidia/d' "$HYPR_CONF"
-        sed -i '/env = XDG_SESSION_TYPE,wayland/d' "$HYPR_CONF"
-        sed -i '/env = GBM_BACKEND,nvidia-drm/d' "$HYPR_CONF"
-        sed -i '/env = __GLX_VENDOR_LIBRARY_NAME,nvidia/d' "$HYPR_CONF"
-        sed -i '/env = QSG_RHI_BACKEND,vulkan/d' "$HYPR_CONF"
-        sed -i '/env = QSG_RENDER_LOOP,basic/d' "$HYPR_CONF"
-        sed -i '/env = __GL_SHADER_DISK_CACHE_SKIP_CLEANUP,1/d' "$HYPR_CONF"
-        sed -i '/env = __GL_SHADER_DISK_CACHE_SIZE,1073741824/d' "$HYPR_CONF"
-        sed -i '/^cursor {/,/^}/d' "$HYPR_CONF"
-        
-        # Now inject the full block natively
-        sed -i "/env = NIXOS_OZONE_WL,1/a env = LIBVA_DRIVER_NAME,nvidia\nenv = XDG_SESSION_TYPE,wayland\nenv = GBM_BACKEND,nvidia-drm\nenv = __GLX_VENDOR_LIBRARY_NAME,nvidia\nenv = QSG_RHI_BACKEND,vulkan\nenv = QSG_RENDER_LOOP,basic\nenv = __GL_SHADER_DISK_CACHE_SKIP_CLEANUP,1\nenv = __GL_SHADER_DISK_CACHE_SIZE,1073741824" "$HYPR_CONF"
+        echo -e "  -> Applying strict NVIDIA variables..."
+        cat <<EOF >> "$HYPR_CONF"
+env = ELECTRON_OZONE_PLATFORM_HINT,auto
+env = WLR_DRM_DEVICES,/dev/dri/card0:/dev/dri/card1
+env = __NV_PRIME_RENDER_OFFLOAD,1
+env = __NV_PRIME_RENDER_OFFLOAD_PROVIDER,NVIDIA-G0
+env = __GL_GSYNC_ALLOWED,0
+env = __GL_VRR_ALLOWED,0
+env = __GL_SHADER_DISK_CACHE,1
+env = __GL_SHADER_DISK_CACHE_PATH,$HOME/.cache/nvidia
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = LIBVA_DRIVER_NAME,nvidia
+env = QSG_RHI_BACKEND,vulkan
+EOF
     fi
+
+    # 4. Close the marker block
+    echo "# === END DOTFILES ENV ===" >> "$HYPR_CONF"
+    
+    # 5. Restore cursor block if a previous bad script deleted it
+    if ! grep -q "cursor {" "$HYPR_CONF"; then
+        echo -e "  -> Restoring deleted cursor block..."
+        cat <<EOF >> "$HYPR_CONF"
+
+cursor {
+    no_warps = true
+}
+EOF
+    fi
+    # ========================================================================
 else
     echo -e "${C_RED}Warning: hyprland.conf not found at $HYPR_CONF${RESET}"
 fi
