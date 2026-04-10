@@ -6,7 +6,7 @@
 QS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BT_PID_FILE="$HOME/.cache/bt_scan_pid"
 BT_SCAN_LOG="$HOME/.cache/bt_scan.log"
-SRC_DIR="$HOME/Images/Wallpapers"
+SRC_DIR="${WALLPAPER_DIR:-${srcdir:-$HOME/Pictures/Wallpapers}}"
 THUMB_DIR="$HOME/.cache/wallpaper_picker/thumbs"
 
 # User-specific cache directory matching the QML logic
