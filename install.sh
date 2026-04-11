@@ -1379,8 +1379,6 @@ fi
 
 # 4. Patch WallpaperPicker.qml dynamically
 if [ -f "$WP_QML" ]; then
-    # 1. Let QML read the WALLPAPER_DIR env variable natively instead of hardcoding the string
-    sed -i 's|Quickshell.env("HOME") + "/Pictures/Wallpapers"|Quickshell.env("WALLPAPER_DIR")|g' "$WP_QML"
     
     # 2. Fix the focus bug: Strip absolute directory paths and quotes so tryFocus() correctly matches the base filename
     sed -i "s|let clean = String(name);|let clean = String(name).replace(/['\"]/g, \"\"); clean = clean.substring(clean.lastIndexOf('/') + 1);|g" "$WP_QML"
