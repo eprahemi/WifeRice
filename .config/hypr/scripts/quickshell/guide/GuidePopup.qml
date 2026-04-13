@@ -2908,14 +2908,16 @@ Item {
                 property string selectedUnit: "metric"
                 property bool apiKeyVisible: false
 
-                function saveWeatherConfig() {
+		function saveWeatherConfig() {
+		    var cache_weather = Quickshell.env("HOME") + "/.cache/quickshell/weather";
                     var file = Quickshell.env("HOME") + "/.config/hypr/scripts/quickshell/calendar/.env";
                     var cmds = [
                         "mkdir -p $(dirname " + file + ")",
                         "echo '# OpenWeather API Configuration (OVERWRITE, not add)' > " + file,
                         "echo 'OPENWEATHER_KEY=" + apiKeyInput.text + "' >> " + file,
                         "echo 'OPENWEATHER_CITY_ID=" + cityIdInput.text + "' >> " + file,
-                        "echo 'OPENWEATHER_UNIT=" + weatherTab.selectedUnit + "' >> " + file,
+			"echo 'OPENWEATHER_UNIT=" + weatherTab.selectedUnit + "' >> " + file,
+			"rm -r " + cache_weather,
                         "notify-send 'Weather' 'API configuration saved successfully!'"
                     ];
                     var finalCmd = cmds.join(" && ");
