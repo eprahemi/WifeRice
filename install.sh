@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.1.10-1"
+DOTS_VERSION="1.1.10-2"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # Prevent the TTY/Console from falling asleep (black screen) during long package builds
@@ -1016,8 +1016,10 @@ CLONE_DIR="$HOME/.hyprland-dots"
 OLD_COMMIT=""
 NEW_COMMIT=""
 
-# Only treat it as a local dev repo if they are NOT inside the default clone directory
-if [ -f "$(pwd)/install.sh" ] && [ -d "$(pwd)/.config" ] && [ "$(pwd)" != "$CLONE_DIR" ]; then
+# Only treat it as a local dev repo if they are NOT inside the default clone directory.
+# Added checks to ensure we are NOT in $HOME and that a .git folder exists.
+# This prevents the script from treating the user's home directory as the source repository.
+if [ -f "$(pwd)/install.sh" ] && [ -d "$(pwd)/.config" ] && [ -d "$(pwd)/.git" ] && [ "$(pwd)" != "$CLONE_DIR" ] && [ "$(pwd)" != "$HOME" ]; then
     REPO_DIR="$(pwd)"
     echo "  -> Running from local development repository at $REPO_DIR"
     NEW_COMMIT=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null)

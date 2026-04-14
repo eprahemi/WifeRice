@@ -147,6 +147,23 @@ Item {
     property string remoteVersion: ""
     property bool updateAvailable: false
 
+    property var kbToggleModelArr: [
+        { label: "Alt + Shift", val: "grp:alt_shift_toggle" },
+        { label: "Win + Space", val: "grp:win_space_toggle" },
+        { label: "Caps Lock", val: "grp:caps_toggle" },
+        { label: "Ctrl + Shift", val: "grp:ctrl_shift_toggle" },
+        { label: "Ctrl + Alt", val: "grp:ctrl_alt_toggle" },
+        { label: "Right Alt", val: "grp:toggle" },
+        { label: "No Toggle", val: "" }
+    ]
+
+    function getKbToggleLabel(val) {
+        for (let i = 0; i < root.kbToggleModelArr.length; i++) {
+            if (root.kbToggleModelArr[i].val === val) return root.kbToggleModelArr[i].label;
+        }
+        return "Alt + Shift";
+    }
+
     onDotsVersionChanged: {
         if (remoteVersion !== "" && dotsVersion !== "Loading...") {
             updateAvailable = compareVersions(dotsVersion, remoteVersion);
@@ -1383,24 +1400,6 @@ Item {
                 ListModel { id: pathSuggestModel }
                 ListModel { id: langSearchModel }
 
-                ListModel {
-                    id: kbToggleModel
-                    ListElement { label: "Alt + Shift"; val: "grp:alt_shift_toggle" }
-                    ListElement { label: "Win + Space"; val: "grp:win_space_toggle" }
-                    ListElement { label: "Caps Lock"; val: "grp:caps_toggle" }
-                    ListElement { label: "Ctrl + Shift"; val: "grp:ctrl_shift_toggle" }
-                    ListElement { label: "Ctrl + Alt"; val: "grp:ctrl_alt_toggle" }
-                    ListElement { label: "Right Alt"; val: "grp:toggle" }
-                    ListElement { label: "No Toggle"; val: "" }
-                }
-
-                function getKbToggleLabel(val) {
-                    for (let i = 0; i < kbToggleModel.count; i++) {
-                        if (kbToggleModel.get(i).val === val) return kbToggleModel.get(i).label;
-                    }
-                    return "Alt + Shift";
-                }
-
                 function updateLangSearch(query) {
                     langSearchModel.clear();
                     let q = query.trim().toLowerCase();
@@ -1907,7 +1906,7 @@ Item {
                                                 anchors.fill: parent
                                                 anchors.margins: root.s(8)
                                                 Text { 
-                                                    text: getKbToggleLabel(root.setKbOptions)
+                                                    text: root.getKbToggleLabel(root.setKbOptions)
                                                     font.family: "JetBrains Mono"
                                                     font.pixelSize: root.s(12)
                                                     color: root.text
@@ -1928,7 +1927,7 @@ Item {
 
                                             Rectangle {
                                                 width: parent.width
-                                                height: kbToggleModel.count * root.s(30)
+                                                height: root.kbToggleModelArr.length * root.s(30)
                                                 y: parent.height + root.s(4)
                                                 radius: root.s(6)
                                                 color: root.surface0
@@ -1939,7 +1938,7 @@ Item {
 
                                                 ListView {
                                                     anchors.fill: parent
-                                                    model: kbToggleModel
+                                                    model: root.kbToggleModelArr
                                                     interactive: false
                                                     delegate: Rectangle {
                                                         width: parent.width
@@ -1950,10 +1949,10 @@ Item {
                                                             anchors.leftMargin: root.s(10)
                                                             anchors.rightMargin: root.s(10)
                                                             Text { 
-                                                                text: model.label
+                                                                text: modelData.label
                                                                 font.family: "JetBrains Mono"
                                                                 font.pixelSize: root.s(11)
-                                                                color: root.setKbOptions === model.val ? root.green : root.text
+                                                                color: root.setKbOptions === modelData.val ? root.green : root.text
                                                                 Layout.fillWidth: true 
                                                             }
                                                         }
@@ -1963,7 +1962,7 @@ Item {
                                                             hoverEnabled: true
                                                             cursorShape: Qt.PointingHandCursor
                                                             onClicked: {
-                                                                root.setKbOptions = model.val;
+                                                                root.setKbOptions = modelData.val;
                                                                 layoutSwitcherBox.isDropdownOpen = false;
                                                             }
                                                         }
@@ -2241,15 +2240,15 @@ Item {
                                                     ctx.stroke();
                                                 }
                                             }
-                                            ColumnLayout { 
-                                                anchors.centerIn: parent
-                                                spacing: root.s(2)
-                                                Text { text: iIcon; font.family: "Iosevka Nerd Font"; font.pixelSize: root.s(26); color: root[cKey]; Layout.alignment: Qt.AlignHCenter } 
-                                                Text { text: txtValue; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(18); color: root.text; Layout.alignment: Qt.AlignHCenter } 
-                                            }
                                         }
-                                        Text { text: tTitle; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: root.s(12); color: root.subtext0; Layout.alignment: Qt.AlignHCenter }
+                                        ColumnLayout { 
+                                            anchors.centerIn: parent
+                                            spacing: root.s(2)
+                                            Text { text: iIcon; font.family: "Iosevka Nerd Font"; font.pixelSize: root.s(26); color: root[cKey]; Layout.alignment: Qt.AlignHCenter } 
+                                            Text { text: txtValue; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(18); color: root.text; Layout.alignment: Qt.AlignHCenter } 
+                                        }
                                     }
+                                    Text { text: tTitle; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: root.s(12); color: root.subtext0; Layout.alignment: Qt.AlignHCenter }
                                 }
                             }
                         }
