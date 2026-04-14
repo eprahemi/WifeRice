@@ -2206,10 +2206,12 @@ Item {
                                     ColumnLayout {
                                         anchors.centerIn: parent
                                         spacing: root.s(15)
+                                        
                                         Item {
                                             Layout.alignment: Qt.AlignHCenter
-                                            width: root.s(130)
-                                            height: root.s(130)
+                                            Layout.preferredWidth: root.s(130)
+                                            Layout.preferredHeight: root.s(130)
+                                            
                                             Canvas {
                                                 id: gaugeCanvas
                                                 anchors.fill: parent
@@ -2240,19 +2242,27 @@ Item {
                                                     ctx.stroke();
                                                 }
                                             }
+                                            
+                                            ColumnLayout { 
+                                                anchors.centerIn: parent
+                                                spacing: root.s(2)
+                                                Text { text: iIcon; font.family: "Iosevka Nerd Font"; font.pixelSize: root.s(26); color: root[cKey]; Layout.alignment: Qt.AlignHCenter } 
+                                                Text { text: txtValue; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(18); color: root.text; Layout.alignment: Qt.AlignHCenter } 
+                                            }
                                         }
-                                        ColumnLayout { 
-                                            anchors.centerIn: parent
-                                            spacing: root.s(2)
-                                            Text { text: iIcon; font.family: "Iosevka Nerd Font"; font.pixelSize: root.s(26); color: root[cKey]; Layout.alignment: Qt.AlignHCenter } 
-                                            Text { text: txtValue; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(18); color: root.text; Layout.alignment: Qt.AlignHCenter } 
+                                        
+                                        Text { 
+                                            text: tTitle; 
+                                            font.family: "JetBrains Mono"; 
+                                            font.weight: Font.Bold; 
+                                            font.pixelSize: root.s(12); 
+                                            color: root.subtext0; 
+                                            Layout.alignment: Qt.AlignHCenter 
                                         }
                                     }
-                                    Text { text: tTitle; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: root.s(12); color: root.subtext0; Layout.alignment: Qt.AlignHCenter }
                                 }
                             }
                         }
-
                         // --- Consolidated Storage Block ---
                         Rectangle {
                             Layout.fillWidth: true
