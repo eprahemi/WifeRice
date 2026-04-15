@@ -29,6 +29,13 @@ get_wifi_icon() {
         else echo "󰤯"; fi
     else echo "󰤮"; fi
 }
+get_eth_status() {
+    if nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -i 'ethernet' | grep -qi 'connected'; then
+        echo "Connected"
+    else
+        echo "Disconnected"
+    fi
+}
 toggle_wifi() {
     if [ "$(get_wifi_status)" = "enabled" ]; then
         nmcli radio wifi off
@@ -40,5 +47,10 @@ toggle_wifi() {
 }
 case $1 in
     --toggle) toggle_wifi ;;
-    *) jq -n -c --arg status "$(get_wifi_status)" --arg ssid "$(get_wifi_ssid)" --arg icon "$(get_wifi_icon)" '{status: $status, ssid: $ssid, icon: $icon}' ;;
+    *) jq -n -c \
+        --arg status "$(get_wifi_status)" \
+        --arg ssid "$(get_wifi_ssid)" \
+        --arg icon "$(get_wifi_icon)" \
+        --arg eth "$(get_eth_status)" \
+        '{status: $status, ssid: $ssid, icon: $icon, eth_status: $eth}' ;;
 esac

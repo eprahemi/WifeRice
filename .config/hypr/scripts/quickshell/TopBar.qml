@@ -120,22 +120,6 @@ Variants {
                 }
             }
 
-            Process {
-                id: ethStatusPoller
-                running: barWindow.isDesktop
-                command: ["bash", "-c", "nmcli -t -f TYPE,STATE dev | grep 'ethernet' | grep -q 'connected' && echo 'Connected' || echo 'Disconnected'"]
-                stdout: StdioCollector {
-                    onStreamFinished: {
-                        let status = this.text.trim();
-                        if (status !== "") barWindow.ethStatus = status;
-                    }
-                }
-            }
-            Timer {
-                interval: 3000; running: barWindow.isDesktop; repeat: true
-                onTriggered: ethStatusPoller.running = true
-            }
-
             // Triggers layout animations immediately to feel fast
             property bool isStartupReady: false
             Timer { interval: 10; running: true; onTriggered: barWindow.isStartupReady = true }
@@ -377,13 +361,14 @@ Variants {
                                 if (barWindow.wifiStatus !== data.status) barWindow.wifiStatus = data.status;
                                 if (barWindow.wifiIcon !== data.icon) barWindow.wifiIcon = data.icon;
                                 if (barWindow.wifiSsid !== data.ssid) barWindow.wifiSsid = data.ssid;
+                                if (barWindow.ethStatus !== data.eth_status) barWindow.ethStatus = data.eth_status;
                             } catch(e) {}
                         }
                         networkWaiter.running = true;
                     }
                 }
             }
-            Process { id: networkWaiter; command: ["bash", "-c", "~/.config/hypr/scripts/quickshell/watchers/network_wait.sh"]; onExited: networkPoller.running = true }
+	    Process { id: networkWaiter; command: ["bash", "-c", "~/.config/hypr/scripts/quickshell/watchers/network_wait.sh"]; onExited: networkPoller.running = true }
 
             // --- BLUETOOTH ---
             Process {
