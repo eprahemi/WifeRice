@@ -10,6 +10,84 @@ RECORD_DIR="$HOME/Videos/Recordings"
 CACHE_DIR="$HOME/.cache/qs_recording_state"
 mkdir -p "$SAVE_DIR" "$RECORD_DIR" "$CACHE_DIR"
 
+# Parse arguments safely upfront
+EDIT_MODE=false
+FULL_MODE=false
+RECORD_MODE=false
+SCAN_QR_MODE=false
+GEOMETRY=""
+DESK_VOL="1.0"
+DESK_MUTE="false"
+MIC_VOL="1.0"
+MIC_MUTE="false"
+MIC_DEVICE=""
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --edit) EDIT_MODE=true; shift ;;
+        --full) FULL_MODE=true; shift ;;
+        --record) RECORD_MODE=true; shift ;;
+        --scan-qr) SCAN_QR_MODE=true; shift ;;
+        --geometry) GEOMETRY="$2"; shift 2 ;;
+        --desk-vol) DESK_VOL="$2"; shift 2 ;;
+        --desk-mute) DESK_MUTE="$2"; shift 2 ;;
+        --mic-vol) MIC_VOL="$2"; shift 2 ;;
+        --mic-mute) MIC_MUTE="$2"; shift 2 ;;
+        --mic-dev) MIC_DEVICE="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+# ---------------------------------------------------------
+# INSTANT QR SCANNING EXECUTION
+# ---------------------------------------------------------
+if [ "$SCAN_QR_MODE" = true ]; then
+    RES_FILE="/tmp/qs_qr_result"
+    rm -f "$RES_FILE"
+    
+    if ! command -v zbarimg &> /dev/null; then
+        echo -e "0,0,0,0\nERROR: zbarimg is not installed. Please install it." > "$RES_FILE"
+        exit 1
+    fi
+
+    # Take screenshot directly to extremely fast RAM memory (/dev/shm)
+    TMP_IMG="/dev/shm/qs_qr_temp_$$.png"
+    grim -g "$GEOMETRY" "$TMP_IMG"
+    
+    QR_TEXT=$(zbarimg --raw -q "$TMP_IMG" 2>/dev/null)
+    
+    if [ -n "$QR_TEXT" ]; then
+        # Fetch the physical coordinates of the QR code
+        XML_OUT=$(zbarimg --xml -q "$TMP_IMG" 2>/dev/null)
+        
+        # Extract the polygon points and calculate X, Y, Width, and Height
+        PTS=$(echo "$XML_OUT" | grep -m 1 "points=" | sed -E "s/.*points=['\"]([^'\"]+)['\"].*/\1/")
+        
+        if [ -n "$PTS" ]; then
+            # Strip plus signs, replace spaces with newlines, and use awk to find the min/max bounding box
+            READ_COORDS=$(echo "$PTS" | tr -d '+' | tr ' ' '\n' | grep -v '^$' | awk -F',' '{
+                x=$1; y=$2;
+                if (min_x=="" || x<min_x) min_x=x;
+                if (max_x=="" || x>max_x) max_x=x;
+                if (min_y=="" || y<min_y) min_y=y;
+                if (max_y=="" || y>max_y) max_y=y;
+            } END {
+                print min_x "," min_y "," (max_x-min_x) "," (max_y-min_y)
+            }')
+        else
+            READ_COORDS="0,0,0,0"
+        fi
+        
+        # Write clean output directly
+        echo -e "${READ_COORDS}\n${QR_TEXT}" > "$RES_FILE"
+    else
+        echo -e "0,0,0,0\nNOT_FOUND" > "$RES_FILE"
+    fi
+    
+    rm -f "$TMP_IMG"
+    exit 0
+fi
+
 # ---------------------------------------------------------
 # SMART TOGGLE: STOP RECORDING & MUX AUDIO/VIDEO
 # ---------------------------------------------------------
@@ -51,7 +129,7 @@ if [ -f "$CACHE_DIR/wl_pid" ]; then
 
                 MIX_SUCCESS=false
                 if [ -n "$HAS_AUDIO" ]; then
-                    # Both exist -> Mix them (Reverted to -c:v copy for instant, 0-CPU muxing)
+                    # Both exist -> Mix them
                     if ffmpeg -nostdin -y -threads 0 \
                         -i "$VID_TMP" -i "$AUD_TMP" \
                         -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[aout]" \
@@ -103,37 +181,11 @@ VID_FILENAME="$RECORD_DIR/Recording_$time.mp4"
 CACHE_FILE="$HOME/.cache/qs_screenshot_geom"
 MODE_CACHE_FILE="$HOME/.cache/qs_screenshot_mode"
 
-# Parse arguments
-EDIT_MODE=false
-FULL_MODE=false
-RECORD_MODE=false
-GEOMETRY=""
-DESK_VOL="1.0"
-DESK_MUTE="false"
-MIC_VOL="1.0"
-MIC_MUTE="false"
-MIC_DEVICE=""
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --edit) EDIT_MODE=true; shift ;;
-        --full) FULL_MODE=true; shift ;;
-        --record) RECORD_MODE=true; shift ;;
-        --geometry) GEOMETRY="$2"; shift 2 ;;
-        --desk-vol) DESK_VOL="$2"; shift 2 ;;
-        --desk-mute) DESK_MUTE="$2"; shift 2 ;;
-        --mic-vol) MIC_VOL="$2"; shift 2 ;;
-        --mic-mute) MIC_MUTE="$2"; shift 2 ;;
-        --mic-dev) MIC_DEVICE="$2"; shift 2 ;;
-        *) shift ;;
-    esac
-done
-
 # Ensure there are no stale lock files when starting a new recording
 rm -f "$CACHE_DIR/processing.lock"
 
 # ---------------------------------------------------------
-# PHASE 1: Execution
+# PHASE 1: Capture Execution
 # ---------------------------------------------------------
 if [ "$FULL_MODE" = true ] || [ -n "$GEOMETRY" ]; then
 
@@ -169,9 +221,7 @@ if [ "$FULL_MODE" = true ] || [ -n "$GEOMETRY" ]; then
             WL_ARGS+=(--audio --audio-device "$DESK_DEV")
         fi
         
-        # --- THE FIX: Tame the hardware encoder directly before recording starts ---
         WL_ARGS+=(--bitrate "1.2 MB") 
-        
         WL_ARGS+=(-f "$VID_TMP")
 
         wl-screenrec "${WL_ARGS[@]}" &
