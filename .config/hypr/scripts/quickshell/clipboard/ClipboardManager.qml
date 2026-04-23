@@ -630,7 +630,7 @@ Item {
                 visible: previewMorph.curItem && previewMorph.curItem.type === "image"
                 
                 opacity: window.previewMode ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 250; } }
+                Behavior on opacity { NumberAnimation { duration: 250;  } }
             }
             
             // Text Preview
@@ -647,19 +647,28 @@ Item {
                 
                 visible: previewMorph.curItem && previewMorph.curItem.type === "text"
                 opacity: window.previewMode ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 250; } }
+                Behavior on opacity { NumberAnimation { duration: 250;  } }
                 
                 TextEdit {
                     id: textPreviewContent
                     width: parent.width
-                    // DEFERRED LOADING: Use short text until animation finishes, then inject the massive string
+                    
+                    // SEAMLESS SLICE TRICK: 
+                    // Load the first 3000 chars instantly so it visually fills the screen. 
+                    // Calculate the rest silently after the animation to prevent layout lag.
                     text: {
                         if (!window.previewMode || !previewMorph.curItem || previewMorph.curItem.type !== "text") return "";
-                        if (window.previewAnimationDone && window.fullTextPreview !== "") {
+                        
+                        if (window.fullTextPreview !== "") {
+                            if (!window.previewAnimationDone && window.fullTextPreview.length > 3000) {
+                                return window.fullTextPreview.substring(0, 3000);
+                            }
                             return window.fullTextPreview;
                         }
-                        return previewMorph.curItem.content;
+                        
+                        return previewMorph.curItem.content; // Fallback to list preview
                     }
+                    
                     color: window.text
                     font.family: "JetBrains Mono"
                     font.pixelSize: window.s(14)
@@ -706,9 +715,8 @@ Item {
                     SequentialAnimation {
                         ParallelAnimation {
                             NumberAnimation { target: previewMorph; property: "opacity"; duration: 100 }
-                            NumberAnimation { properties: "x,y,width,height,radius"; duration: 250; easing.type: Easing.OutExpo }
+                            NumberAnimation { properties: "x,y,width,height,radius"; duration: 400; easing.type: Easing.OutExpo }
                         }
-                        // Flip the flag only AFTER the heavy geometry animation finishes
                         ScriptAction { script: { window.previewAnimationDone = true; } }
                     }
                 },

@@ -76,8 +76,21 @@ Item {
         id: appModel
     }
 
+    // --- KEYBOARD NAV TRACKING (For Smart Highlight Morphing) ---
+    property bool isKeyboardNav: false
+    Timer {
+        id: keyboardNavTimer
+        interval: 500
+        repeat: false
+        onTriggered: window.isKeyboardNav = false
+    }
+
     // --- SMART DIFFING FILTER ---
     function filterApps(query) {
+        // Disable morphing behavior so the highlight box sticks to the flying item
+        window.isKeyboardNav = false;
+        if (keyboardNavTimer.running) keyboardNavTimer.stop();
+
         appList.currentIndex = -1;
         appList.positionViewAtBeginning();
 
@@ -196,7 +209,6 @@ Item {
         property real animatedMargins: targetMargins
 
         Behavior on animatedListHeight { 
-            // Swapped to OutExpo and extended duration for a much softer tail
             NumberAnimation { duration: 500; easing.type: Easing.OutExpo } 
         }
         Behavior on animatedMargins { 
@@ -279,12 +291,16 @@ Item {
                         onTextChanged: filterApps(text)
 
                         Keys.onDownPressed: {
+                            window.isKeyboardNav = true;
+                            keyboardNavTimer.restart();
                             if (appList.currentIndex < appModel.count - 1) {
                                 appList.currentIndex++;
                             }
                             event.accepted = true;
                         }
                         Keys.onUpPressed: {
+                            window.isKeyboardNav = true;
+                            keyboardNavTimer.restart();
                             if (appList.currentIndex > 0) {
                                 appList.currentIndex--;
                             }
@@ -392,7 +408,6 @@ Item {
                         onCurIdxChanged: {
                             if (curIdx === -1) return; 
                             
-                            // Extended durations for the bounding box morphing
                             if (curIdx > prevIdx) {
                                 bottomAnim.duration = 250; topAnim.duration = 450;
                             } else if (curIdx < prevIdx) {
@@ -401,19 +416,29 @@ Item {
                             prevIdx = curIdx;
                         }
 
-                        property real itemH: mainBg.itemHeight + appList.spacing
-                        property real targetTop: Math.max(0, curIdx) * itemH
-                        property real targetBottom: targetTop + mainBg.itemHeight
+                        // Track the current item's ACTUAL coordinates so it sticks mid-flight
+                        property real targetTop: appList.currentItem ? appList.currentItem.y : 0
+                        property real targetBottom: appList.currentItem ? (appList.currentItem.y + appList.currentItem.height) : 0
 
                         property real actualTop: targetTop
                         property real actualBottom: targetBottom
 
-                        // Smoother morphing curves
-                        Behavior on actualTop { NumberAnimation { id: topAnim; easing.type: Easing.OutExpo } }
-                        Behavior on actualBottom { NumberAnimation { id: bottomAnim; easing.type: Easing.OutExpo } }
+                        // Only enable the morphed lagging behavior during keyboard navigation.
+                        // During search/diffing, it will instantly track the moving item.
+                        Behavior on actualTop { 
+                            enabled: window.isKeyboardNav
+                            NumberAnimation { id: topAnim; easing.type: Easing.OutExpo } 
+                        }
+                        Behavior on actualBottom { 
+                            enabled: window.isKeyboardNav
+                            NumberAnimation { id: bottomAnim; easing.type: Easing.OutExpo } 
+                        }
 
                         y: actualTop
                         height: actualBottom - actualTop
+                        
+                        // Makes the highlight respect the item's pop-in scale animation
+                        scale: appList.currentItem ? appList.currentItem.scale : 1
                         
                         opacity: appList.count > 0 && appList.currentIndex >= 0 ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 300 } }
@@ -425,7 +450,6 @@ Item {
                     height: mainBg.itemHeight
                     z: 1 
                     
-                    // Explicit origin ensures scaling happens from the center of the item
                     transformOrigin: Item.Center 
 
                     Rectangle {
