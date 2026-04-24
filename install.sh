@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.6.5-1"
+DOTS_VERSION="1.6.5-2"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # ==============================================================================
@@ -1278,7 +1278,7 @@ else
             # Fetch tree only without downloading blobs (file contents)
             git fetch --depth 1 --filter=blob:none origin HEAD -q
             
-            # Get 3 random image paths from the remote tree using FETCH_HEAD
+            # Get 3 random image paths from the remote tree
             RANDOM_PICS=$(git ls-tree -r FETCH_HEAD --name-only | grep -iE '\.(jpg|jpeg|png|gif|webp)$' | shuf -n 3)
             
             if [ -n "$RANDOM_PICS" ]; then
@@ -1698,13 +1698,13 @@ fi
 # -> Sync settings.json: write only the fields the installer owns.
 echo -e "  -> Syncing installer-owned fields to settings.json..."
 
-# 1. Parse keybindings.conf dynamically into a JSON array
+# 1. Parse keybindings.conf dynamically into a JSON array safely
 KEYBINDS_CONF="$TARGET_CONFIG_DIR/hypr/config/keybindings.conf"
 KEYBINDS_JSON="[]"
 
 if [ -f "$KEYBINDS_CONF" ]; then
     echo -e "  -> Parsing $KEYBINDS_CONF into settings.json..."
-    KEYBINDS_JSON="["
+    TMP_BINDS=$(mktemp)
     
     while IFS= read -r line || [ -n "$line" ]; do
         # Skip comments and empty lines
@@ -1720,33 +1720,35 @@ if [ -f "$KEYBINDS_CONF" ]; then
         rest="${line#*=}"
 
         # Split strictly into 4 parts using commas. 
-        # The remainder of the line goes into 'cmd', safely preserving any internal commas!
         IFS=',' read -r mods key disp cmd <<< "$rest"
 
-        # Trim leading/trailing whitespace
-        mods=$(echo "$mods" | xargs)
-        key=$(echo "$key" | xargs)
-        disp=$(echo "$disp" | xargs)
-        cmd=$(echo "$cmd" | xargs)
+        # Native bash trim (safest way to preserve quotes while removing spaces)
+        mods="${mods#"${mods%%[![:space:]]*}"}"
+        mods="${mods%"${mods##*[![:space:]]}"}"
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        disp="${disp#"${disp%%[![:space:]]*}"}"
+        disp="${disp%"${disp##*[![:space:]]}"}"
+        cmd="${cmd#"${cmd%%[![:space:]]*}"}"
+        cmd="${cmd%"${cmd##*[![:space:]]}"}"
 
-        # Safely encode into JSON object using jq
-        obj=$(jq -n \
+        # Safely encode into JSON object using jq and append to temp file
+        jq -c -n \
             --arg t "$bind_type" \
             --arg m "$mods" \
             --arg k "$key" \
             --arg d "$disp" \
             --arg c "$cmd" \
-            '{type: $t, mods: $m, key: $k, dispatcher: $d, command: $c}')
-
-        KEYBINDS_JSON="$KEYBINDS_JSON$obj,"
+            '{type: $t, mods: $m, key: $k, dispatcher: $d, command: $c}' >> "$TMP_BINDS"
     done < "$KEYBINDS_CONF"
 
-    # Clean up trailing comma and close array
-    if [ "$KEYBINDS_JSON" != "[" ]; then
-        KEYBINDS_JSON="${KEYBINDS_JSON%,}]"
+    # Combine all JSON objects into a single JSON array safely
+    if [ -s "$TMP_BINDS" ]; then
+        KEYBINDS_JSON=$(jq -s '.' "$TMP_BINDS")
     else
         KEYBINDS_JSON="[]"
     fi
+    rm -f "$TMP_BINDS"
 else
     echo -e "  -> \e[33mkeybindings.conf not found. Skipping keybind parsing.\e[0m"
 fi
@@ -1755,18 +1757,22 @@ fi
 if [ -f "$SETTINGS_FILE" ]; then
     tmp_json=$(mktemp)
     # Merge existing user fields, overwriting installer variables and the new keybinds array
-    jq --arg langs "$KB_LAYOUTS" \
+    if jq --arg langs "$KB_LAYOUTS" \
        --arg wpdir "$WALLPAPER_DIR" \
        --arg kbopt "$KB_OPTIONS" \
        --argjson binds "$KEYBINDS_JSON" \
        '.language = $langs | .wallpaperDir = $wpdir | .kbOptions = $kbopt | .keybinds = $binds' \
-       "$SETTINGS_FILE" > "$tmp_json" && mv "$tmp_json" "$SETTINGS_FILE"
-       
-    printf "  -> settings.json updated (user fields preserved) %-3s ${C_GREEN}[ OK ]${RESET}\n" ""
+       "$SETTINGS_FILE" > "$tmp_json"; then
+       mv "$tmp_json" "$SETTINGS_FILE"
+       printf "  -> settings.json updated (user fields preserved) %-3s \e[32m[ OK ]\e[0m\n" ""
+    else
+       echo -e "  -> \e[31mFailed to update settings.json. Continuing...\e[0m"
+       rm -f "$tmp_json"
+    fi
 else
     # File does not exist yet — generate the full default structure dynamically
     mkdir -p "$(dirname "$SETTINGS_FILE")"
-    jq -n \
+    if jq -n \
        --arg langs "$KB_LAYOUTS" \
        --arg wpdir "$WALLPAPER_DIR" \
        --arg kbopt "$KB_OPTIONS" \
@@ -1779,9 +1785,11 @@ else
          language: $langs,
          kbOptions: $kbopt,
          keybinds: $binds
-       }' > "$SETTINGS_FILE"
-       
-    printf "  -> settings.json created with defaults and parsed keybinds %-13s ${C_GREEN}[ OK ]${RESET}\n" ""
+       }' > "$SETTINGS_FILE"; then
+       printf "  -> settings.json created with defaults and parsed keybinds %-13s \e[32m[ OK ]\e[0m\n" ""
+    else
+       echo -e "  -> \e[31mFailed to create settings.json. Check syntax.\e[0m"
+    fi
 fi
 # 4. Patch WallpaperPicker.qml dynamically
 if [ -f "$WP_QML" ]; then
