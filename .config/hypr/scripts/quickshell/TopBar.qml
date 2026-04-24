@@ -56,7 +56,7 @@ Variants {
 
             height: barHeight
             margins { top: s(8); bottom: 0; left: s(4); right: s(4) }
-            exclusiveZone: barHeight + s(4)
+            exclusiveZone: barHeight 
             color: "transparent"
 
             MatugenColors {
