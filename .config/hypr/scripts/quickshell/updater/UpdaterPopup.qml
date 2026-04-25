@@ -170,7 +170,7 @@ except Exception as e:
                         if (blockTrimmed === "") continue;
                         
                         // Parse literally every new line inside the commit into separate boxes
-                        let lines = blockTrimmed.split(/\\r\\n|\\n|\r\n|\n/);
+                        let lines = blockTrimmed.split(/\r\n|\n/);
                         for (let j = 0; j < lines.length; j++) {
                             let trimmed = lines[j].trim();
                             if (trimmed.length > 0) {
@@ -251,30 +251,14 @@ except Exception as e:
                 Layout.fillWidth: true
                 Layout.preferredHeight: window.s(60)
 
-                readonly property real finalNewX: (width - newVer.implicitWidth) / 2
-                readonly property real finalArrowX: finalNewX - arrowIcon.implicitWidth - window.s(24)
-                readonly property real finalOldX: finalArrowX - oldVer.implicitWidth - window.s(24)
-                readonly property real initialOldX: (width - oldVer.implicitWidth) / 2
-
                 Text { 
                     id: oldVer
                     text: window.localVersion
                     font.family: "JetBrains Mono"
                     font.pixelSize: window.s(22)
                     color: window.subtext0 
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: versionContainer.initialOldX 
-                }
-                
-                Text { 
-                    id: arrowIcon
-                    text: ""
-                    font.family: "Iosevka Nerd Font"
-                    font.pixelSize: window.s(22)
-                    color: window.surface2 
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: versionContainer.finalOldX + oldVer.implicitWidth 
-                    opacity: 0
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: 0 // Starts exactly dead center
                 }
                 
                 Text { 
@@ -284,10 +268,10 @@ except Exception as e:
                     font.weight: Font.Black
                     font.pixelSize: window.s(48) 
                     color: window.green 
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: versionContainer.finalNewX 
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: window.s(20) // Starts slightly right
                     opacity: 0
-                    scale: 0.8 // Start smaller for a satisfying pop
+                    scale: 0.8 
                 }
 
                 MultiEffect {
@@ -309,47 +293,32 @@ except Exception as e:
                     PauseAnimation { duration: 150 }
 
                     ParallelAnimation {
-                        // 1. Old version smoothly slides left and dims
+                        // 1. Old version smoothly slides left and disappears completely (slower)
                         NumberAnimation { 
-                            target: oldVer; property: "x"; 
-                            to: versionContainer.finalOldX
-                            duration: 700; easing.type: Easing.OutExpo 
+                            target: oldVer; property: "anchors.horizontalCenterOffset"; 
+                            to: window.s(-30) // Slide smoothly left
+                            duration: 1200; easing.type: Easing.OutExpo 
                         }
                         NumberAnimation {
                             target: oldVer; property: "opacity";
-                            to: 0.3
-                            duration: 600; easing.type: Easing.OutSine
+                            to: 0.0 // Fully disappear
+                            duration: 1000; easing.type: Easing.OutSine
                         }
 
-                        // 2. Arrow fades in and slides into place
+                        // 2. New version slides into the EXACT center and scales up
                         SequentialAnimation {
-                            PauseAnimation { duration: 100 }
+                            PauseAnimation { duration: 400 } // Wait a bit more for old version to clear out
                             ParallelAnimation {
-                                NumberAnimation { target: arrowIcon; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutSine }
+                                NumberAnimation { target: newVer; property: "opacity"; to: 1; duration: 800; easing.type: Easing.OutSine }
                                 NumberAnimation { 
-                                    target: arrowIcon; property: "x"; 
-                                    from: versionContainer.initialOldX
-                                    to: versionContainer.finalArrowX
-                                    duration: 600; easing.type: Easing.OutExpo 
-                                }
-                            }
-                        }
-
-                        // 3. New version slides in and scales up with a satisfying bounce
-                        SequentialAnimation {
-                            PauseAnimation { duration: 200 }
-                            ParallelAnimation {
-                                NumberAnimation { target: newVer; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutSine }
-                                NumberAnimation { 
-                                    target: newVer; property: "x"; 
-                                    from: versionContainer.finalNewX + window.s(20)
-                                    to: versionContainer.finalNewX
-                                    duration: 600; easing.type: Easing.OutExpo 
+                                    target: newVer; property: "anchors.horizontalCenterOffset"; 
+                                    to: 0 // Ends exactly dead center
+                                    duration: 1200; easing.type: Easing.OutExpo 
                                 }
                                 NumberAnimation { 
                                     target: newVer; property: "scale"; 
                                     to: 1.0; 
-                                    duration: 600; easing.type: Easing.OutBack; easing.overshoot: 1.4 
+                                    duration: 1200; easing.type: Easing.OutBack; easing.overshoot: 1.4 
                                 }
                             }
                             ScriptAction { script: glowAnim.start() }

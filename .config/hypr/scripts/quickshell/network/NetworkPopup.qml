@@ -2055,6 +2055,7 @@ Item {
             }
 
             Rectangle {
+                id: bottomTabsContainer
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottomMargin: window.s(25)
@@ -2066,30 +2067,65 @@ Item {
                 border.width: 1
                 visible: window.ethPresent || window.wifiPresent || window.btPresent
 
+                // The Morphing Highlight Pill
+                Rectangle {
+                    id: activeTabHighlight
+                    y: window.s(6)
+                    height: bottomTabsContainer.height - window.s(12)
+                    radius: window.s(10)
+                    z: 0
+
+                    property int prevIdx: 1
+                    property int curIdx: window.activeMode === "eth" ? 0 : (window.activeMode === "wifi" ? 1 : 2)
+
+                    onCurIdxChanged: {
+                        if (curIdx > prevIdx) { rightAnim.duration = 200; leftAnim.duration = 350; }
+                        else if (curIdx < prevIdx) { leftAnim.duration = 200; rightAnim.duration = 350; }
+                        prevIdx = curIdx;
+                    }
+
+                    property Item activeItem: {
+                        if (window.activeMode === "eth" && window.ethPresent) return ethTabRect;
+                        if (window.activeMode === "wifi" && window.wifiPresent) return wifiTabRect;
+                        if (window.activeMode === "bt" && window.btPresent) return btTabRect;
+                        return null;
+                    }
+
+                    property real targetLeft: activeItem ? activeItem.x : 0
+                    property real targetRight: activeItem ? (activeItem.x + activeItem.width) : 0
+
+                    property real actualLeft: targetLeft
+                    property real actualRight: targetRight
+
+                    Behavior on actualLeft { NumberAnimation { id: leftAnim; duration: 250; easing.type: Easing.OutExpo } }
+                    Behavior on actualRight { NumberAnimation { id: rightAnim; duration: 250; easing.type: Easing.OutExpo } }
+
+                    x: window.s(6) + actualLeft
+                    width: Math.max(0, actualRight - actualLeft)
+                    opacity: activeItem ? 1.0 : 0.0
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Qt.lighter(window.activeColor, 1.15) }
+                        GradientStop { position: 1.0; color: window.activeColor }
+                    }
+                }
+
                 RowLayout {
+                    id: tabsLayout
                     anchors.fill: parent
                     anchors.margins: window.s(6)
                     spacing: window.s(6)
 
                     Rectangle {
+                        id: ethTabRect
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         visible: window.ethPresent
                         radius: window.s(10)
                         color: window.activeMode === "eth" ? "transparent" : (ethTabMa.containsMouse ? window.surface1 : "transparent")
                         Behavior on color { ColorAnimation { duration: 200 } }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: window.s(10)
-                            opacity: window.activeMode === "eth" ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 300 } }
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: Qt.lighter(window.sharedAccent, 1.15) }
-                                GradientStop { position: 1.0; color: window.sharedAccent }
-                            }
-                        }
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -2114,6 +2150,7 @@ Item {
                     Rectangle { visible: window.ethPresent && (window.wifiPresent || window.btPresent); width: 1; Layout.fillHeight: true; Layout.margins: window.s(5); color: "#33ffffff" }
 
                     Rectangle {
+                        id: wifiTabRect
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         visible: window.wifiPresent
@@ -2121,18 +2158,6 @@ Item {
                         
                         color: window.activeMode === "wifi" ? "transparent" : (wifiTabMa.containsMouse ? window.surface1 : "transparent")
                         Behavior on color { ColorAnimation { duration: 200 } }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: window.s(10)
-                            opacity: window.activeMode === "wifi" ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 300 } }
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: Qt.lighter(window.sharedAccent, 1.15) }
-                                GradientStop { position: 1.0; color: window.sharedAccent }
-                            }
-                        }
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -2157,24 +2182,13 @@ Item {
                     Rectangle { visible: window.wifiPresent && window.btPresent; width: 1; Layout.fillHeight: true; Layout.margins: window.s(5); color: "#33ffffff" }
 
                     Rectangle {
+                        id: btTabRect
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         visible: window.btPresent
                         radius: window.s(10)
                         color: window.activeMode === "bt" ? "transparent" : (btTabMa.containsMouse ? window.surface1 : "transparent")
                         Behavior on color { ColorAnimation { duration: 200 } }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: window.s(10)
-                            opacity: window.activeMode === "bt" ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 300 } }
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: Qt.lighter(window.btAccent, 1.15) }
-                                GradientStop { position: 1.0; color: window.btAccent }
-                            }
-                        }
 
                         RowLayout {
                             anchors.centerIn: parent
