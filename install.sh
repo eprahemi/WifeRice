@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.6.6-1"
+DOTS_VERSION="1.6.7"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # ==============================================================================
@@ -109,12 +109,14 @@ OPT_SDDM=false
 OPT_NVIM=false
 OPT_ZSH=false
 OPT_WALLPAPERS=false
+OPT_OVERRIDE_KEYBINDS=false
 
 INSTALL_NVIM=false
 INSTALL_ZSH=false
 INSTALL_SDDM=false
 REPLACE_DM=false
 SETUP_SDDM_THEME=false
+SDDM_WAYLAND=false
 
 DRIVER_CHOICE="None (Skipped)"
 DRIVER_PKGS=()
@@ -920,13 +922,15 @@ prompt_optional_features_menu() {
         local S_NVIM=$( [ "$OPT_NVIM" = true ] && echo -e "${C_GREEN}[x]${RESET}" || echo -e "${DIM}[ ]${RESET}" )
         local S_ZSH=$( [ "$OPT_ZSH" = true ] && echo -e "${C_GREEN}[x]${RESET}" || echo -e "${DIM}[ ]${RESET}" )
         local S_WP=$( [ "$OPT_WALLPAPERS" = true ] && echo -e "${C_GREEN}[x]${RESET}" || echo -e "${DIM}[ ]${RESET}" )
+        local S_KB_OVR=$( [ "$OPT_OVERRIDE_KEYBINDS" = true ] && echo -e "${C_GREEN}[x]${RESET}" || echo -e "${DIM}[ ]${RESET}" )
 
         local MENU_ITEMS="1. $S_SDDM $DM_LABEL\n"
         MENU_ITEMS+="2. $S_NVIM Neovim Matugen Configuration\n"
         MENU_ITEMS+="3. $S_ZSH Zsh Shell Setup\n"
         MENU_ITEMS+="4. $S_WP Download FULL Wallpaper Pack (Unchecked = 3 Random)\n"
-        MENU_ITEMS+="5. ${BOLD}${C_GREEN}Proceed with Installation / Update${RESET}\n"
-        MENU_ITEMS+="6. ${DIM}Back to Main Menu${RESET}"
+        MENU_ITEMS+="5. $S_KB_OVR Override Keybinds (Unchecked = Keep Local)\n"
+        MENU_ITEMS+="6. ${BOLD}${C_GREEN}Proceed with Installation / Update${RESET}\n"
+        MENU_ITEMS+="7. ${DIM}Back to Main Menu${RESET}"
 
         local choice
         choice=$(echo -e "$MENU_ITEMS" | fzf \
@@ -934,7 +938,7 @@ prompt_optional_features_menu() {
             --layout=reverse \
             --border=rounded \
             --margin=1,2 \
-            --height=13 \
+            --height=15 \
             --prompt=" Options > " \
             --pointer=">" \
             --header=" SPACE or ENTER to toggle. Select Proceed when ready. ")
@@ -944,7 +948,8 @@ prompt_optional_features_menu() {
             *"2."*) OPT_NVIM=$([ "$OPT_NVIM" = true ] && echo false || echo true) ;;
             *"3."*) OPT_ZSH=$([ "$OPT_ZSH" = true ] && echo false || echo true) ;;
             *"4."*) OPT_WALLPAPERS=$([ "$OPT_WALLPAPERS" = true ] && echo false || echo true) ;;
-            *"5."*) 
+            *"5."*) OPT_OVERRIDE_KEYBINDS=$([ "$OPT_OVERRIDE_KEYBINDS" = true ] && echo false || echo true) ;;
+            *"6."*) 
                 # Apply chosen toggles to installation logic
                 if [ "$OPT_SDDM" = true ]; then
                     if [[ -z "$CURRENT_DM" ]]; then
@@ -959,6 +964,19 @@ prompt_optional_features_menu() {
                         SETUP_SDDM_THEME=true
                         PKGS+=("sddm")
                     fi
+                    
+                    # Prompt for Wayland DisplayServer
+                    clear
+                    draw_header
+                    echo -e "${BOLD}${C_CYAN}=== SDDM Configuration ===${RESET}\n"
+                    echo -e "Do you want to force SDDM to run natively on Wayland?"
+                    echo -e "${DIM}(Note: May cause issues with some NVIDIA setups or older SDDM versions. Default is No.)${RESET}"
+                    read -p "Force SDDM Wayland backend? (y/N): " sddm_wayland
+                    if [[ "$sddm_wayland" =~ ^[Yy]$ ]]; then
+                        SDDM_WAYLAND=true
+                    else
+                        SDDM_WAYLAND=false
+                    fi
                 fi
                 if [ "$OPT_NVIM" = true ]; then
                     INSTALL_NVIM=true
@@ -970,7 +988,7 @@ prompt_optional_features_menu() {
                 fi
                 return 0 # Return success to start the installation process
                 ;;
-            *"6."*) return 1 ;; # Return failure code to jump back to main menu
+            *"7."*) return 1 ;; # Return failure code to jump back to main menu
             *) ;;
         esac
     done
@@ -1633,14 +1651,14 @@ if [ -f "$HYPR_CONF" ]; then
     fi
 
     # ========================================================================
-    # BULLETPROOF HYPRLAND ENV INJECTION
+    # BULLETPROOF HYPRLAND ENV INJECTION TO ENV.CONF
     # ========================================================================
-    echo -e "  -> Applying Environment Variables safely..."
+    echo -e "  -> Applying Environment Variables safely to env.conf..."
+    ENV_CONF="$TARGET_CONFIG_DIR/hypr/config/env.conf"
+    mkdir -p "$(dirname "$ENV_CONF")"
 
-    # 1. Clean up ANY previous injections using our marker block.
-    # This guarantees we never duplicate variables and never eat other config lines.
+    # 1. Clean up ANY previous injections using our marker block in hyprland.conf
     sed -i '/^# === DOTFILES AUTO-INJECTED ENV ===/,/^# === END DOTFILES ENV ===/d' "$HYPR_CONF"
-
     # Also clean up legacy sed attempts just to be safe so they don't linger
     sed -i '/env = WALLPAPER_DIR/d' "$HYPR_CONF"
     sed -i '/env = SCRIPT_DIR/d' "$HYPR_CONF"
@@ -1648,9 +1666,8 @@ if [ -f "$HYPR_CONF" ]; then
     sed -i '/env = XDG_PICTURES_DIR/d' "$HYPR_CONF"
     sed -i '/env = XDG_VIDEOS_DIR/d' "$HYPR_CONF"
 
-    # 2. Start the new injection block at the absolute end of the file
-    cat <<EOF >> "$HYPR_CONF"
-
+    # 2. Start the new injection block in the dedicated env.conf file
+    cat <<EOF > "$ENV_CONF"
 # === DOTFILES AUTO-INJECTED ENV ===
 env = XDG_PICTURES_DIR,$USER_PICTURES_DIR
 env = XDG_VIDEOS_DIR,$USER_VIDEOS_DIR
@@ -1661,10 +1678,9 @@ EOF
 
     # 3. Inject NVIDIA specific config if detected
     if [ "$GPU_VENDOR" == "NVIDIA" ]; then
-        echo -e "  -> Applying strict NVIDIA variables..."
-        cat <<EOF >> "$HYPR_CONF"
+        echo -e "  -> Applying safe NVIDIA variables..."
+        cat <<EOF >> "$ENV_CONF"
 env = ELECTRON_OZONE_PLATFORM_HINT,auto
-env = WLR_DRM_DEVICES,/dev/dri/card0:/dev/dri/card1
 env = __NV_PRIME_RENDER_OFFLOAD,1
 env = __NV_PRIME_RENDER_OFFLOAD_PROVIDER,NVIDIA-G0
 env = __GL_GSYNC_ALLOWED,0
@@ -1673,14 +1689,32 @@ env = __GL_SHADER_DISK_CACHE,1
 env = __GL_SHADER_DISK_CACHE_PATH,$HOME/.cache/nvidia
 env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 env = LIBVA_DRIVER_NAME,nvidia
+EOF
+
+        # Check for Aggressive/Experimental variables explicitly behind a prompt
+        echo -e "\n${BOLD}${C_YELLOW}[?] NVIDIA GPU Detected.${RESET}"
+        read -p "Do you want to enable aggressive/experimental NVIDIA env vars (WLR_DRM_DEVICES, QSG_RHI_BACKEND=vulkan)? (y/N): " < /dev/tty inject_agg
+        if [[ "$inject_agg" =~ ^[Yy]$ ]]; then
+            echo -e "  -> Applying aggressive NVIDIA variables..."
+            cat <<EOF >> "$ENV_CONF"
+env = WLR_DRM_DEVICES,/dev/dri/card0:/dev/dri/card1
 env = QSG_RHI_BACKEND,vulkan
 EOF
+        else
+            echo -e "  -> ${DIM}Skipping aggressive NVIDIA variables.${RESET}"
+        fi
     fi
 
     # 4. Close the marker block
-    echo "# === END DOTFILES ENV ===" >> "$HYPR_CONF"
+    echo "# === END DOTFILES ENV ===" >> "$ENV_CONF"
 
-    # 5. Restore cursor block if a previous bad script deleted it
+    # 5. Ensure env.conf is sourced in hyprland.conf
+    if ! grep -q "env.conf" "$HYPR_CONF"; then
+        echo -e "  -> Adding source directive for env.conf to hyprland.conf..."
+        sed -i '1s/^/source = ~\/.config\/hypr\/config\/env.conf\n/' "$HYPR_CONF"
+    fi
+
+    # 6. Restore cursor block if a previous bad script deleted it
     if ! grep -q "cursor {" "$HYPR_CONF"; then
         echo -e "  -> Restoring deleted cursor block..."
         cat <<EOF >> "$HYPR_CONF"
@@ -1761,13 +1795,22 @@ if [ -f "$SETTINGS_FILE" ]; then
     LOCAL_BINDS_JSON=$(jq '.keybinds // []' "$SETTINGS_FILE" 2>/dev/null || echo "[]")
 fi
 
-# 3. MERGE Keybinds (Upstream overwrites Local on matching mods+key, Custom Local are kept)
-# This uses jq's * (merge) operator. The object on the right (upstream) overwrites the object on the left (local)
-MERGED_BINDS_JSON=$(jq -n --argjson local "$LOCAL_BINDS_JSON" --argjson up "$UPSTREAM_BINDS_JSON" '
-    ($local | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ld |
-    ($up | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ud |
-    ($ld * $ud) | map(.)
-')
+# 3. MERGE Keybinds (Based on toggle)
+if [ "$OPT_OVERRIDE_KEYBINDS" = true ]; then
+    # Upstream overwrites Local
+    MERGED_BINDS_JSON=$(jq -n --argjson local "$LOCAL_BINDS_JSON" --argjson up "$UPSTREAM_BINDS_JSON" '
+        ($local | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ld |
+        ($up | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ud |
+        ($ld * $ud) | map(.)
+    ')
+else
+    # Local overwrites Upstream (Default)
+    MERGED_BINDS_JSON=$(jq -n --argjson local "$LOCAL_BINDS_JSON" --argjson up "$UPSTREAM_BINDS_JSON" '
+        ($local | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ld |
+        ($up | map({key: (.mods + "|" + .key), value: .}) | from_entries) as $ud |
+        ($ud * $ld) | map(.)
+    ')
+fi
 
 # 4. Inject the parsed array into settings.json
 if [ -f "$SETTINGS_FILE" ]; then
@@ -1897,6 +1940,8 @@ printf "  -> Matugen GTK & Qt environment initialized %-4s ${C_GREEN}[ OK ]${RES
 echo -e "\n${C_CYAN}[ INFO ]${RESET} Enabling Core System Services..."
 sudo systemctl enable NetworkManager.service
 printf "  -> NetworkManager enabled %-20s ${C_GREEN}[ OK ]${RESET}\n" ""
+sudo systemctl enable --now power-profiles-daemon.service 2>/dev/null || true
+printf "  -> Power Profiles Daemon enabled %-13s ${C_GREEN}[ OK ]${RESET}\n" ""
 
 # 7. Setup SDDM Theme and Config
 if [[ "$SETUP_SDDM_THEME" == true ]]; then
@@ -1927,9 +1972,10 @@ QtObject {
 EOF
         sudo chown $USER:$USER /usr/share/sddm/themes/matugen-minimal/Colors.qml
 
-        # FIX 2: Use a drop-in file for the theme and force SDDM to run as a Wayland greeter
+        # FIX 2: Use a drop-in file for the theme and optionally force SDDM to run as a Wayland greeter
         sudo mkdir -p /etc/sddm.conf.d
-        cat <<EOF | sudo tee /etc/sddm.conf.d/10-wayland-matugen.conf > /dev/null
+        if [[ "$SDDM_WAYLAND" == true ]]; then
+            cat <<EOF | sudo tee /etc/sddm.conf.d/10-wayland-matugen.conf > /dev/null
 [Theme]
 Current=matugen-minimal
 
@@ -1937,6 +1983,12 @@ Current=matugen-minimal
 DisplayServer=wayland
 GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
+        else
+            cat <<EOF | sudo tee /etc/sddm.conf.d/10-wayland-matugen.conf > /dev/null
+[Theme]
+Current=matugen-minimal
+EOF
+        fi
 
         printf "  -> SDDM Theme configured %-17s ${C_GREEN}[ OK ]${RESET}\n" ""
     fi

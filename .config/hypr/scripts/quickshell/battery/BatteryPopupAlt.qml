@@ -676,6 +676,7 @@ Item {
                                 color: "transparent"
                                 border.color: window.ambientSecondary
                                 border.width: 1
+                                Behavior on border.color { ColorAnimation { duration: 1000 } }
                                 opacity: 0.06 - (index * 0.02)
                             }
                         }
@@ -852,6 +853,7 @@ Item {
 
                             Canvas {
                                 id: cpuCanvas; anchors.fill: parent; rotation: 180
+                                Connections { target: window; function onBaseChanged() { cpuCanvas.requestPaint() } }
                                 onPaint: {
                                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                     var cX = width/2; var cY = height/2; var rad = (width/2)-window.s(8);
@@ -897,6 +899,7 @@ Item {
 
                             Canvas {
                                 id: ramCanvas; anchors.fill: parent; rotation: 180
+                                Connections { target: window; function onBaseChanged() { ramCanvas.requestPaint() } }
                                 onPaint: {
                                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                     var cX = width/2; var cY = height/2; var rad = (width/2)-window.s(8);
@@ -942,6 +945,7 @@ Item {
 
                             Canvas {
                                 id: diskCanvas; anchors.fill: parent; rotation: 180
+                                Connections { target: window; function onBaseChanged() { diskCanvas.requestPaint() } }
                                 onPaint: {
                                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                     var cX = width/2; var cY = height/2; var rad = (width/2)-window.s(8);
@@ -987,6 +991,7 @@ Item {
 
                             Canvas {
                                 id: tempCanvas; anchors.fill: parent; rotation: 180
+                                Connections { target: window; function onBaseChanged() { tempCanvas.requestPaint() } }
                                 onPaint: {
                                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                     var cX = width/2; var cY = height/2; var rad = (width/2)-window.s(8);
@@ -1090,8 +1095,8 @@ Item {
 
                                                 gradient: Gradient {
                                                     orientation: Gradient.Horizontal
-                                                    GradientStop { position: 0.0; color: window.blue }
-                                                    GradientStop { position: 1.0; color: window.sapphire }
+                                                    GradientStop { position: 0.0; color: window.blue; Behavior on color { ColorAnimation { duration: 300 } } }
+                                                    GradientStop { position: 1.0; color: window.sapphire; Behavior on color { ColorAnimation { duration: 300 } } }
                                                 }
                                             }
                                         }
@@ -1224,7 +1229,7 @@ Item {
                             Repeater {
                                 model: ListModel {
                                     ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh"; icon: ""; baseColor: "mauve"; weight: 1.0 }
-                                    ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh & systemctl suspend"; icon: "ᶻ 𝗓 𐰁"; baseColor: "blue"; weight: 1.0 }
+                                    ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh & systemctl suspend"; icon: "ᶻ 𝗓 𝗓"; baseColor: "blue"; weight: 1.0 }
                                     ListElement { cmd: "systemctl reboot"; icon: "󰑓"; baseColor: "yellow"; weight: 2.5 }
                                     ListElement { cmd: "systemctl poweroff -i"; icon: ""; baseColor: "red"; weight: 3.5 }
                                 }
@@ -1266,6 +1271,7 @@ Item {
                                         }
                                         onWavePhaseChanged: requestPaint()
                                         Connections { target: actionCapsule; function onFillLevelChanged() { actionWaveCanvas.requestPaint() } }
+                                        Connections { target: window; function onBaseChanged() { actionWaveCanvas.requestPaint() } }
                                         
                                         onPaint: {
                                             var ctx = getContext("2d");

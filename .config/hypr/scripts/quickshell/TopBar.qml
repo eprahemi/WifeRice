@@ -786,7 +786,9 @@ Variants {
                             prevIdx = curIdx;
                         }
 
-                        property real targetLeft: wsLayout.x + curIdx * barWindow.s(38)
+                        // FIXED: Calculate step size to perfectly match the rounded width + rounded spacing of the Row elements.
+                        property real stepSize: barWindow.s(32) + barWindow.s(6)
+                        property real targetLeft: wsLayout.x + (curIdx * stepSize)
                         property real targetRight: targetLeft + barWindow.s(32)
 
                         property real actualLeft: targetLeft
