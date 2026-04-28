@@ -286,7 +286,7 @@ PanelWindow {
     function switchWidget(newWidget, arg) {
         prepTimer.stop();
         delayedClear.stop();
-
+    
         if (newWidget === "hidden") {
             if (currentActive !== "hidden") {
                 masterWindow.morphDuration = 170; 
@@ -300,9 +300,7 @@ PanelWindow {
                 delayedClear.start();
             }
         } else {
-            // Treat it as closed if it's currently animating out
             if (currentActive === "hidden" || !masterWindow.isVisible) {
-                // Open with a nice pop
                 masterWindow.morphDuration = 250; 
                 masterWindow.exitDuration = 250;
                 masterWindow.disableMorph = false;
@@ -310,18 +308,19 @@ PanelWindow {
                 let t = getLayout(newWidget);
                 masterWindow.animX = t.rx;
                 masterWindow.animY = t.ry;
-                masterWindow.animW = 1;
-                masterWindow.animH = 1;
+                masterWindow.animW = t.w;
+                masterWindow.animH = t.h;
+                masterWindow.targetW = t.w;
+                masterWindow.targetH = t.h;
             } else {
-                // Smooth widget-to-widget morphs
                 masterWindow.morphDuration = 300; 
                 masterWindow.disableMorph = false;
                 masterWindow.exitDuration = (newWidget === "wallpaper") ? 125 : 300;
             }
-
-            prepTimer.newWidget = newWidget;
-            prepTimer.newArg = arg;
-            prepTimer.start();
+    
+        prepTimer.newWidget = newWidget;
+        prepTimer.newArg = arg;
+        prepTimer.start();
         }
     }
 
@@ -346,7 +345,9 @@ PanelWindow {
         masterWindow.targetH = t.h;
         
         let props = newWidget === "wallpaper" ? { "widgetArg": arg } : {};
-        props["notifModel"] = masterWindow.notifModel;
+	props["notifModel"] = masterWindow.notifModel;
+	props["layoutWidth"] = t.w;
+	props["layoutHeight"] = t.h;
 
         if (immediate) {
             widgetStack.replace(t.comp, props, StackView.Immediate);

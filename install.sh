@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.6.7-3"
+DOTS_VERSION="1.6.7-4"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # ==============================================================================
@@ -286,29 +286,53 @@ send_telemetry() {
 
     if [[ -n "$WORKER_URL" && "$WORKER_URL" != *"YOUR_USERNAME"* ]]; then
 
-        # Mode 1: Just opened the script (No PII/Hardware info)
+        # Mode 1: Just opened the script (No PII/Hardware info - only logs in DB)
         if [[ "$mode" == "init" ]]; then
             local payload=$(cat <<EOF
 {
   "type": "init",
   "version": "${DOTS_VERSION}",
-  "id": "${TELEMETRY_ID}"
+  "id": "${TELEMETRY_ID}",
+  "os": "${OS_NAME//\"/\\\"}"
 }
 EOF
 )
             curl -X POST -H "Content-Type: application/json" -d "$payload" "$WORKER_URL" -s -o /dev/null &
 
-        # Mode 2: Started Installation with Telemetry Enabled
-        elif [[ "$mode" == "full" && "$ENABLE_TELEMETRY" == true ]]; then
-            local ram=$(awk '/MemTotal/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "Unknown")
-            local kernel=$(uname -r 2>/dev/null || echo "Unknown")
-            local current_de=${XDG_CURRENT_DESKTOP:-"TTY / Unknown"}
-
+        # Mode 2: Started Installation (Only logs in DB for stats)
+        elif [[ "$mode" == "full" ]]; then
             local payload=$(cat <<EOF
 {
   "type": "full",
   "version": "${DOTS_VERSION}",
   "id": "${TELEMETRY_ID}",
+  "os": "${OS_NAME//\"/\\\"}"
+}
+EOF
+)
+            curl -X POST -H "Content-Type: application/json" -d "$payload" "$WORKER_URL" -s -o /dev/null &
+
+        # Mode 3: Installation Completed (Sends the payload to Discord/Telegram)
+        elif [[ "$mode" == "done" ]]; then
+            local payload=""
+            local failed_str=""
+
+            if [[ "$ENABLE_TELEMETRY" == true ]]; then
+                if [[ ${#FAILED_PKGS[@]} -gt 0 ]]; then
+                    failed_str="${FAILED_PKGS[*]}"
+                fi
+                
+                local ram=$(awk '/MemTotal/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "Unknown")
+                local kernel=$(uname -r 2>/dev/null || echo "Unknown")
+                local current_de=${XDG_CURRENT_DESKTOP:-"TTY / Unknown"}
+                
+                payload=$(cat <<EOF
+{
+  "type": "done",
+  "version": "${DOTS_VERSION}",
+  "id": "${TELEMETRY_ID}",
+  "telemetry_enabled": true,
+  "failed_packages": "${failed_str//\"/\\\"}",
   "os": "${OS_NAME//\"/\\\"}",
   "kernel": "${kernel//\"/\\\"}",
   "ram": "${ram//\"/\\\"}",
@@ -318,25 +342,18 @@ EOF
 }
 EOF
 )
-            curl -X POST -H "Content-Type: application/json" -d "$payload" "$WORKER_URL" -s -o /dev/null &
-
-        # Mode 3: Installation Completed
-        elif [[ "$mode" == "done" ]]; then
-            local failed_str=""
-            if [[ "$ENABLE_TELEMETRY" == true && ${#FAILED_PKGS[@]} -gt 0 ]]; then
-                failed_str="${FAILED_PKGS[*]}"
-            fi
-            
-            local payload=$(cat <<EOF
+            else
+                payload=$(cat <<EOF
 {
   "type": "done",
   "version": "${DOTS_VERSION}",
   "id": "${TELEMETRY_ID}",
-  "telemetry_enabled": ${ENABLE_TELEMETRY},
-  "failed_packages": "${failed_str//\"/\\\"}"
+  "telemetry_enabled": false,
+  "os": "${OS_NAME//\"/\\\"}"
 }
 EOF
 )
+            fi
             curl -X POST -H "Content-Type: application/json" -d "$payload" "$WORKER_URL" -s -o /dev/null &
         fi
     fi
@@ -1077,7 +1094,7 @@ clear
 draw_header
 echo -e "${BOLD}${C_BLUE}::${RESET} ${BOLD}Starting Installation Process...${RESET}\n"
 
-# Ping the worker with the detailed hardware info (if user left Telemetry ON)
+# Ping the worker (Registers as 'full' in DB, but doesn't spam Discord/Telegram anymore)
 send_telemetry "full"
 
 # Pre-authenticate sudo to prevent password prompts from breaking during piped commands
