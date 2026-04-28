@@ -406,6 +406,17 @@ Variants {
                 }
             }
 
+            Timer {
+                id: artRetryTimer
+                interval: 500
+                repeat: true
+                running: barWindow.displayArtUrl && barWindow.displayArtUrl.indexOf("placeholder_blank.png") !== -1
+                onTriggered: {
+                    musicForceRefresh.running = false;
+                    musicForceRefresh.running = true;
+                }
+            }
+
             Process {
                 id: kbPoller; running: true
                 command: ["bash", "-c", "~/.config/hypr/scripts/quickshell/watchers/kb_fetch.sh"]
@@ -1463,10 +1474,7 @@ Variants {
 
                                 Row { 
                                     id: batLayoutRow
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.horizontalCenter: barWindow.isDesktop ? parent.horizontalCenter : undefined
-                                    anchors.left: barWindow.isDesktop ? undefined : parent.left
-                                    anchors.leftMargin: barWindow.isDesktop ? 0 : barWindow.s(12)
+                                    anchors.centerIn: parent
                                     spacing: barWindow.s(8)
                                     Text { 
                                         anchors.verticalCenter: parent.verticalCenter
@@ -1483,9 +1491,8 @@ Variants {
                                         Behavior on color { ColorAnimation { duration: 300 } }
                                     }
                                 }
-				MouseArea { id: batMouse; hoverEnabled: true; anchors.fill: parent; onClicked: Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/qs_manager.sh toggle battery"]) 
-			       }
-		       	    }                        
+                                MouseArea { id: batMouse; hoverEnabled: true; anchors.fill: parent; onClicked: Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/qs_manager.sh toggle battery"]) }
+                            }                        
 	         	}
 		    }
 		    Rectangle {

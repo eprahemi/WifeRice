@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.6.7-6"
+DOTS_VERSION="1.6.8"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # ==============================================================================
@@ -383,13 +383,13 @@ EOF
     # OSC 8 Escape Sequences for Clickable Hyperlinks
     local OSC8_GH="\e]8;;https://github.com/ilyamiro/imperative-dots.git\a"
     local OSC8_TW="\e]8;;https://twitter.com/ilyamirox\a"
-    local OSC8_RD="\e]8;;https://reddit.com/r/ilyamiro1\a"
+    local OSC8_RD="\e]8;;https://reddit.com/u/ilyamiro1\a"
     local OSC8_KF="\e]8;;https://ko-fi.com/ilyamiro\a"
     local OSC8_END="\e]8;;\a"
 
     printf "\033[K${C_BLUE} -----------------------------------------------------------------${RESET}\n"
     printf "\033[K${BOLD}${C_GREEN} GitHub:${RESET}  ${OSC8_GH}https://github.com/ilyamiro/imperative-dots.git${OSC8_END}\n"
-    printf "\033[K${BOLD}${C_CYAN} Twitter:${RESET} ${OSC8_TW}@ilyamirox${OSC8_END}  |  ${BOLD}${C_RED}Reddit:${RESET} ${OSC8_RD}r/ilyamiro1${OSC8_END}\n"
+    printf "\033[K${BOLD}${C_CYAN} Twitter:${RESET} ${OSC8_TW}@ilyamirox${OSC8_END}  |  ${BOLD}${C_RED}Reddit:${RESET} ${OSC8_RD}u/ilyamiro1${OSC8_END}\n"
     printf "\033[K${BOLD}${C_MAGENTA} Donate:${RESET}  ${OSC8_KF}Donate on Ko-fi (Help the project!)${OSC8_END}\n"
     printf "\033[K${C_BLUE} -----------------------------------------------------------------${RESET}\n"
     printf "\033[K${BOLD} User:           ${RESET} %s\n" "$USER_NAME"
@@ -559,31 +559,63 @@ manage_drivers() {
 
 manage_keyboard() {
     local available_layouts=(
-        "gb - English (UK)" "au - English (Australia)"
-        "ca - English/French (Canada)" "ie - English (Ireland)"
-        "nz - English (New Zealand)" "za - English (South Africa)"
-        "fr - French" "be - Belgian" "ch - Swiss"
-        "de - German" "at - Austrian" "nl - Dutch" "lu - Luxembourgish"
-        "es - Spanish" "pt - Portuguese" "br - Portuguese (Brazil)"
-        "it - Italian" "gr - Greek" "mt - Maltese"
-        "se - Swedish" "no - Norwegian" "dk - Danish"
-        "fi - Finnish" "is - Icelandic"
-        "pl - Polish" "cz - Czech" "sk - Slovak" "hu - Hungarian"
-        "ro - Romanian" "bg - Bulgarian" "ru - Russian" "ua - Ukrainian"
-        "by - Belarusian" "rs - Serbian" "hr - Croatian" "si - Slovenian"
-        "mk - Macedonian" "ba - Bosnian" "me - Montenegrin"
-        "lt - Lithuanian" "lv - Latvian" "ee - Estonian"
-        "am - Armenian" "ge - Georgian" "kz - Kazakh" "kg - Kyrgyz"
-        "tj - Tajik" "tm - Turkmen" "uz - Uzbek" "mn - Mongolian"
-        "il - Hebrew" "ara - Arabic" "ir - Persian (Farsi)"
-        "iq - Iraqi" "sy - Syrian"
-        "in - Indian" "pk - Pakistani" "bd - Bangla"
-        "th - Thai" "vn - Vietnamese" "la - Lao"
-        "mm - Burmese" "kh - Khmer"
-        "cn - Chinese" "jp - Japanese" "kr - Korean" "tw - Taiwanese"
-        "ng - Nigerian" "ma - Moroccan" "dz - Algerian" "et - Ethiopian"
-        "latam - Spanish (Latin America)"
-        "al - Albanian" "fo - Faroese"
+        # --- Americas ---
+        "us - English (US)" "ca - English/French (Canada)" "ca-multix - Canadian Multilingual"
+        "latam - Spanish (Latin America)" "br - Portuguese (Brazil)" "ar - Arabic (Latin America)"
+        "bo - Bolivia" "cl - Chile" "co - Colombia" "cr - Costa Rica" "cu - Cuba" 
+        "do - Dominican Republic" "ec - Ecuador" "sv - El Salvador" "gt - Guatemala" 
+        "hn - Honduras" "mx - Mexico" "ni - Nicaragua" "pa - Panama" "py - Paraguay" 
+        "pe - Peru" "pr - Puerto Rico" "uy - Uruguay" "ve - Venezuela"
+
+        # --- Europe (West, Central, & North) ---
+        "gb - English (UK)" "ie - English (Ireland)" "gd - Scottish Gaelic" "cy-gb - Welsh"
+        "fr - French" "be - Belgian" "ch - Swiss" "de - German" "at - Austrian" 
+        "nl - Dutch" "lu - Luxembourgish" "es - Spanish" "pt - Portuguese" 
+        "it - Italian" "mt - Maltese" "se - Swedish" "no - Norwegian" "dk - Danish" 
+        "fi - Finnish" "is - Icelandic" "fo - Faroese" "gl - Greenlandic"
+        "pl - Polish" "cz - Czech" "sk - Slovak" "hu - Hungarian" 
+        "ad - Andorra" "mc - Monaco" "sm - San Marino" "va - Vatican"
+        "epo - Esperanto" "eu - Basque" "ca-fr - Catalan" 
+
+        # --- Europe (East) & Caucasus ---
+        "ru - Russian" "ua - Ukrainian" "by - Belarusian" "ro - Romanian" "bg - Bulgarian" 
+        "rs - Serbian" "hr - Croatian" "si - Slovenian" "mk - Macedonian" "ba - Bosnian" 
+        "me - Montenegrin" "gr - Greek" "cy - Cyprus" "ee - Estonian" "lv - Latvian" 
+        "lt - Lithuanian" "md - Moldovan" "am - Armenian" "ge - Georgian" "az - Azerbaijani" 
+        "kz - Kazakh" "kg - Kyrgyz" "tj - Tajik" "tm - Turkmen" "uz - Uzbek" 
+        "mn - Mongolian" "tat - Tatar" "chu - Chuvash" "os - Ossetian" "udm - Udmurt" 
+        "kbd - Kabardian" "che - Chechen"
+
+        # --- Asia & Pacific ---
+        "au - English (Australia)" "nz - English (New Zealand)" 
+        "cn - Chinese" "jp - Japanese" "kr - Korean" "tw - Taiwanese" "hk - Hong Kong"
+        "in - Indian" "pk - Pakistani" "bd - Bangla" "lk - Sri Lankan" "np - Nepali" 
+        "mv - Maldivian (Dhivehi)" "bt - Bhutanese (Dzongkha)" "af - Afghan (Pashto/Dari)"
+        "th - Thai" "vn - Vietnamese" "la - Lao" "mm - Burmese" "kh - Khmer" 
+        "id - Indonesian" "my - Malay" "ph - Filipino" "sg - Singaporean" 
+        "bn - Bengali" "ta - Tamil" "te - Telugu" "gu - Gujarati" "pa - Punjabi" 
+        "ml - Malayalam" "kn - Kannada" "or - Odia" "as - Assamese" "ur - Urdu"
+
+        # --- Middle East & North Africa ---
+        "il - Hebrew" "ara - Arabic" "iq - Iraqi" "sy - Syrian" "ir - Persian (Farsi)"
+        "ma - Moroccan" "dz - Algerian" "eg - Egyptian" "ly - Libyan" "tn - Tunisian" 
+        "sd - Sudanese" "lb - Lebanese" "jo - Jordanian" "ps - Palestinian" 
+        "sa - Saudi Arabian" "kw - Kuwaiti" "bh - Bahraini" "qa - Qatari" "ae - UAE" 
+        "om - Omani" "ye - Yemeni"
+
+        # --- Sub-Saharan Africa ---
+        "za - English (South Africa)" "ng - Nigerian" "et - Ethiopian" "sn - Senegalese"
+        "ke - Kenyan" "tz - Tanzanian" "gh - Ghanaian" "cm - Cameroonian" "ci - Ivorian"
+        "ml - Malian" "gn - Guinean" "cd - Congolese (DRC)" "cg - Congolese (RC)"
+        "rw - Rwandan" "bi - Burundian" "ug - Ugandan" "zm - Zambian" "zw - Zimbabwean"
+        "mw - Malawian" "mz - Mozambican" "ao - Angolan" "na - Namibian" "bw - Motswana"
+        "mg - Malagasy" "so - Somali" "dj - Djiboutian" "er - Eritrean" "tg - Togolese"
+        "bj - Beninese" "bf - Burkinabe" "ne - Nigerien" "td - Chadian" "cf - Central African"
+        "gq - Equatorial Guinean" "ga - Gabonese"
+
+        # --- Alternative Layouts ---
+        "us-intl - US International" "dvorak - US Dvorak" "colemak - US Colemak" 
+        "norman - US Norman" "workman - US Workman" "math - Mathematics" "brai - Braille"
     )
     
     local selected_codes=()
@@ -1395,15 +1427,13 @@ if [ "$DO_FULL_INSTALL" = true ]; then
         printf "  -> Restored existing settings.json  %-12s ${C_GREEN}[ OK ]${RESET}\n" ""
     fi
 else
-    # Partial Update Logic (Git Diff)
+   # Partial Update Logic (Git Diff)
     CHANGED_FILES=""
     DELETED_FILES=""
     
     if [ "$OLD_COMMIT" != "$NEW_COMMIT" ]; then
-        # 'AM' catches Added and Modified files
-        CHANGED_FILES=$(git -C "$REPO_DIR" diff --name-only --diff-filter=AM "$OLD_COMMIT" "$NEW_COMMIT" | grep "^\.config/")
-        # 'D' catches Deleted files (this handles files that were removed or moved/renamed upstream)
-        DELETED_FILES=$(git -C "$REPO_DIR" diff --name-only --diff-filter=D "$OLD_COMMIT" "$NEW_COMMIT" | grep "^\.config/")
+        CHANGED_FILES=$(git -C "$REPO_DIR" diff --name-only --no-renames --diff-filter=AM "$OLD_COMMIT" "$NEW_COMMIT" | grep "^\.config/")
+        DELETED_FILES=$(git -C "$REPO_DIR" diff --name-only --no-renames --diff-filter=D "$OLD_COMMIT" "$NEW_COMMIT" | grep "^\.config/")
     fi
 
     if [ -n "$CHANGED_FILES" ] || [ -n "$DELETED_FILES" ]; then
