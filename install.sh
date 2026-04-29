@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.6.8"
+DOTS_VERSION="1.6.9"
 VERSION_FILE="$HOME/.local/state/imperative-dots-version"
 
 # ==============================================================================
@@ -1040,7 +1040,7 @@ prompt_optional_features_menu() {
                 fi
                 return 0 # Return success to start the installation process
                 ;;
-            *"7."*) return 1 ;; # Return failure code to jump back to main menu
+            *"8."*) return 1 ;; # Return failure code to jump back to main menu
             *) ;;
         esac
     done
