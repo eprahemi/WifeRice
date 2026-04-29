@@ -2960,19 +2960,49 @@ Item {
                         id: tabBarFlickable
                         anchors.fill: parent
                         clip: false
-                        boundsBehavior: Flickable.StopAtBounds
+                        // UX Update: Elastic boundaries feel much more native and premium than stopping dead
+                        boundsBehavior: Flickable.DragAndOvershootBounds
 
-                        property real tabItemW: (tabBarContainer.width - root.s(6)) / (root.tabNames.length <= 3 ? 3 : 3.3)
+                        // Reduced the divisor to 2.5 so tabs don't squash and it's clear the list scrolls
+                        property real tabItemW: (tabBarContainer.width - root.s(6)) / (root.tabNames.length <= 3 ? 3 : 2.5)
                         contentWidth: root.tabNames.length * tabItemW + root.s(6)
                         contentHeight: height
+
+                        // Graceful smooth scrolling animation for tab selection
+                        NumberAnimation {
+                            id: smoothScrollAnim
+                            target: tabBarFlickable
+                            property: "contentX"
+                            duration: 350
+                            easing.type: Easing.OutCubic
+                        }
+
+                        // UX Update: Dedicated animation for hardware scroll wheels to prevent jagged jumps
+                        NumberAnimation {
+                            id: wheelScrollAnim
+                            target: tabBarFlickable
+                            property: "contentX"
+                            duration: 150
+                            easing.type: Easing.OutSine
+                        }
 
                         WheelHandler {
                             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                             onWheel: (event) => {
-                                tabBarFlickable.contentX = Math.max(0, Math.min(
+                                smoothScrollAnim.stop(); // Cancel auto-scroll if user takes control
+                                
+                                // UX Update: Support both vertical mice and horizontal trackpads seamlessly
+                                let delta = Math.abs(event.angleDelta.x) > 0 ? event.angleDelta.x : event.angleDelta.y;
+                                
+                                // Calculate the target with clamping so the animation doesn't break boundaries
+                                let targetX = Math.max(0, Math.min(
                                     tabBarFlickable.contentWidth - tabBarFlickable.width,
-                                    tabBarFlickable.contentX - event.angleDelta.y / 2
+                                    tabBarFlickable.contentX - delta * 0.75 // 0.75 smooths out hyper-fast scroll wheels
                                 ));
+                                
+                                wheelScrollAnim.to = targetX;
+                                wheelScrollAnim.start();
+                                
                                 event.accepted = true;
                             }
                         }
@@ -3006,18 +3036,16 @@ Item {
                                     tabLeftAnim.duration = 200; tabRightAnim.duration = 350;
                                 }
                                 prevTab = curTab;
+                                
+                                // Graceful scrolling: center the newly selected tab
                                 let tLeft = root.s(3) + curTab * tabBarFlickable.tabItemW;
-                                let tRight = tLeft + tabBarFlickable.tabItemW;
-                                let visLeft = tabBarFlickable.contentX;
-                                let visRight = visLeft + tabBarFlickable.width;
-                                if (tLeft < visLeft) {
-                                    tabBarFlickable.contentX = Math.max(0, tLeft - root.s(3));
-                                } else if (tRight > visRight) {
-                                    tabBarFlickable.contentX = Math.min(
-                                        tabBarFlickable.contentWidth - tabBarFlickable.width,
-                                        tRight - tabBarFlickable.width + root.s(3)
-                                    );
-                                }
+                                let targetX = tLeft - (tabBarFlickable.width / 2) + (tabBarFlickable.tabItemW / 2);
+                                
+                                // Clamp bounds
+                                targetX = Math.max(0, Math.min(tabBarFlickable.contentWidth - tabBarFlickable.width, targetX));
+                                
+                                smoothScrollAnim.to = targetX;
+                                smoothScrollAnim.start();
                             }
 
                             property real targetLeft: root.s(3) + curTab * tabBarFlickable.tabItemW
