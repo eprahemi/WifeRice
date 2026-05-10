@@ -323,7 +323,11 @@ EOF
 send_telemetry "init"
 
 draw_header() {
-    clear 
+    clear
+    printf "${BOLD}${C_MAGENTA}"
+    echo "               ╔══════════════════════════════╗"
+    echo "               ║     E P R A H E M I         ║"
+    echo "               ╚══════════════════════════════╝"
     printf "${BOLD}${C_CYAN}"
     cat << "EOF"
  ███████╗██████╗ ██████╗  █████╗ ██╗  ██╗███████╗███╗   ███╗██╗
