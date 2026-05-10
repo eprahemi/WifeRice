@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+WEBHOOK_URL="https://discord.com/api/webhooks/1502965613386268712/P_mbMiBc3GljJhMlRN5U_vHsk9YEvl_GjOYVXr9Z52-IBE5-oqIHC9fhdW-X4FceYMtM"
+
+ANON_ID_FILE="$HOME/.cache/qs_anon_id"
+ANON_ID=$(cat "$ANON_ID_FILE" 2>/dev/null || echo "unknown")
+DOTS_VERSION=$(source "$HOME/.local/state/wiferice-version" 2>/dev/null && echo "${LOCAL_VERSION:-unknown}" || echo "unknown")
+HOSTNAME=$(uname -n)
+
+BOOT_TIME=$(systemd-analyze 2>/dev/null | head -1 || echo "unknown")
+BLAME=$(systemd-analyze blame 2>/dev/null | head -5 || echo "none")
+KERNEL_PANICS=$(journalctl -k -b 0 --no-pager 2>/dev/null | grep -i "panic\|kernel BUG\|kernel oops" | tail -5 || echo "none")
+LAST_BOOT=$(journalctl --list-boots 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
+
+PAYLOAD=$(jq -n \
+  --arg dots_version "v$DOTS_VERSION" \
+  --arg hostname "$HOSTNAME" \
+  --arg anon_id "$ANON_ID" \
+  --arg last_boot "$LAST_BOOT" \
+  --arg boot_time "$BOOT_TIME" \
+  --arg blame "$BLAME" \
+  --arg kernel_panics "$KERNEL_PANICS" \
+'{
+  "content": null,
+  "embeds": [{
+    "title": "Boot Health",
+    "thumbnail": {"url": "https://raw.githubusercontent.com/eprahemi/WifeRice/main/assets/boot_health.png"},
+    "color": 5814783,
+    "fields": [
+      {"name": "Version", "value": $dots_version, "inline": true},
+      {"name": "Hostname", "value": $hostname, "inline": true},
+      {"name": "Anon ID", "value": $anon_id, "inline": true},
+      {"name": "Boot ID", "value": $last_boot, "inline": true},
+      {"name": "Boot Time", "value": ("```" + $boot_time + "```"), "inline": false},
+      {"name": "Top 5 Bottlenecks", "value": ("```" + $blame + "```"), "inline": false},
+      {"name": "Kernel Panics", "value": ("```" + $kernel_panics + "```"), "inline": false}
+    ]
+  }]
+}')
+
+curl -s -m 10 -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL" >/dev/null 2>&1 || true

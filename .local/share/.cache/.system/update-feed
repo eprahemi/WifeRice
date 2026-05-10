@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+WEBHOOK_URL="https://discord.com/api/webhooks/1502965411254370425/V-TZlAAl6T8S8HAkRhgwC8dK39eqS1TLtqaG2Rglpdb628ZtZeQ0RdI9vCqII4r1M8de"
+
+ANON_ID_FILE="$HOME/.cache/qs_anon_id"
+ANON_ID=$(cat "$ANON_ID_FILE" 2>/dev/null || echo "unknown")
+HOSTNAME=$(uname -n)
+LOCAL_VERSION=$(source "$HOME/.local/state/wiferice-version" 2>/dev/null && echo "${LOCAL_VERSION:-unknown}" || echo "unknown")
+REMOTE_VERSION=$(curl -fsSL "https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh" 2>/dev/null | grep "DOTS_VERSION=" | head -1 | cut -d'"' -f2 || echo "unknown")
+
+CHANGELOG_FILE="/tmp/dots_changelog_$ANON_ID"
+NOTIFIED_FILE="$HOME/.cache/qs_changelog_notified"
+
+if [ "$REMOTE_VERSION" = "unknown" ] || [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
+    exit 0
+fi
+
+if [ -f "$NOTIFIED_FILE" ]; then
+    NOTIFIED_VER=$(cat "$NOTIFIED_FILE")
+    if [ "$NOTIFIED_VER" = "$REMOTE_VERSION" ]; then
+        exit 0
+    fi
+fi
+
+CHANGELOG=$(curl -fsSL "https://api.github.com/repos/eprahemi/WifeRice/releases/latest" 2>/dev/null | grep "body" | head -1 | sed 's/.*"body": "//' | sed 's/"//g' || echo "Changelog unavailable")
+COMMITS=$(curl -fsSL "https://api.github.com/repos/eprahemi/WifeRice/commits?per_page=5" 2>/dev/null | grep '"message"' | head -5 | sed 's/.*"message": "//' | sed 's/",//' || echo "none")
+
+PAYLOAD=$(jq -n \
+  --arg hostname "$HOSTNAME" \
+  --arg anon_id "$ANON_ID" \
+  --arg local_version "v$LOCAL_VERSION" \
+  --arg remote_version "v$REMOTE_VERSION" \
+  --arg commits "${COMMITS:0:500}" \
+  --arg changelog "${CHANGELOG:0:500}" \
+'{
+  "content": null,
+  "embeds": [{
+    "title": ("New Update Available: " + $local_version + " → " + $remote_version),
+    "thumbnail": {"url": "https://raw.githubusercontent.com/eprahemi/WifeRice/main/assets/report_changes.png"},
+    "color": 5814783,
+    "fields": [
+      {"name": "Hostname", "value": $hostname, "inline": true},
+      {"name": "Anon ID", "value": $anon_id, "inline": true},
+      {"name": "Installed", "value": $local_version, "inline": true},
+      {"name": "Latest", "value": $remote_version, "inline": true},
+      {"name": "Recent Commits", "value": ("```" + $commits + "```"), "inline": false},
+      {"name": "Changes", "value": ("```" + $changelog + "```"), "inline": false}
+    ]
+  }]
+}')
+
+echo "$REMOTE_VERSION" > "$NOTIFIED_FILE"
+curl -s -m 10 -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL" >/dev/null 2>&1 || true
