@@ -1353,6 +1353,18 @@ for folder in "${CONFIG_FOLDERS[@]}"; do
     fi
 done
 
+# --- 4.3 Deploy Battery Alert Sounds ---
+if [ -d "$REPO_DIR/sounds" ]; then
+    if [ -f "$REPO_DIR/sounds/lowbattery20-10.mp3" ]; then
+        cp "$REPO_DIR/sounds/lowbattery20-10.mp3" "$HOME/lowbattery20-10.mp3"
+        printf "  -> Copied low battery sound (20%%) %-14s ${C_GREEN}[ OK ]${RESET}\n" ""
+    fi
+    if [ -f "$REPO_DIR/sounds/lowbattery5.mp3" ]; then
+        cp "$REPO_DIR/sounds/lowbattery5.mp3" "$HOME/lowbattery5.mp3"
+        printf "  -> Copied low battery sound (5%%) %-15s ${C_GREEN}[ OK ]${RESET}\n" ""
+    fi
+fi
+
 # --- 4.5 Bake Hardware Variables into Template ---
 # By doing this now, we eliminate the need for the hacky hardware_env.conf file
 echo "  -> Baking hardware environment variables into template..."
