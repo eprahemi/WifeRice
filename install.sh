@@ -1291,7 +1291,7 @@ else
     fi
 fi
 
-# --- 3.5 Old Dotfiles Cleanup (ilyamiro/WaveRice era) ---
+# --- 3.5 Legacy Dotfiles Cleanup ---
 echo -e "\n${C_CYAN}[ INFO ]${RESET} Cleaning up legacy dotfiles..."
 LEGACY_CLEANED=false
 
