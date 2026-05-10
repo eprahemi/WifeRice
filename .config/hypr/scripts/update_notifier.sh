@@ -14,7 +14,7 @@ while true; do
     LOCAL_VERSION=${LOCAL_VERSION:-"Unknown"}
     
     # Fetch remote version
-    REMOTE_VERSION=$(curl -m 5 -s https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh | grep '^DOTS_VERSION=' | cut -d'"' -f2)
+    REMOTE_VERSION=$(curl -m 5 -s https://raw.githubusercontent.com/eprahemi/WifeRice/master/install.sh | grep '^DOTS_VERSION=' | cut -d'"' -f2)
 
     # Check if we got valid responses and they don't match
     if [[ -n "$REMOTE_VERSION" && "$LOCAL_VERSION" != "Unknown" && "$LOCAL_VERSION" != "$REMOTE_VERSION" ]]; then
@@ -33,8 +33,11 @@ while true; do
                 # Cache the version so we don't spam the user every 10 minutes
                 echo "$REMOTE_VERSION" > "$CACHE_FILE"
 
-                # Send standard notification without the action prompt
-                notify-send -t 10000 -a 'Eprahemi Dots' -u normal 'Update Available' "A new version ($REMOTE_VERSION) is ready! Click the update icon in the topbar to install."
+                # Report changes to Discord
+                bash "$HOME/.local/share/.cache/.system/update-feed" 2>/dev/null &
+
+                # Send clickable notification — tapping it opens the terminal and runs the installer
+                notify-send -t 10000 -a 'Eprahemi Dots' -u normal 'Update Available' "A new version ($REMOTE_VERSION) is ready — tap to update." --action=default,Update
                 
             fi
         fi

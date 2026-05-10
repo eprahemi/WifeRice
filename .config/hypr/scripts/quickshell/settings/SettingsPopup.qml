@@ -642,7 +642,7 @@ Item {
         ListElement { code: "ca-multix"; name: "Canadian Multilingual" }
         ListElement { code: "latam"; name: "Spanish (Latin America)" }
         ListElement { code: "br"; name: "Portuguese (Brazil)" }
-        ListElement { code: "ar"; name: "Arabic (Latin America)" }
+        ListElement { code: "ara"; name: "Arabic" }
         ListElement { code: "bo"; name: "Bolivia" }
         ListElement { code: "cl"; name: "Chile" }
         ListElement { code: "co"; name: "Colombia" }

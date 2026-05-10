@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.8.3"
+DOTS_VERSION="1.8.4"
 VERSION_FILE="$HOME/.local/state/wiferice-version"
 
 # ==============================================================================
@@ -164,6 +164,9 @@ ARCH_PKGS=(
     "matugen-bin" "ffmpeg" "fastfetch" "quickshell-git" "unzip" "python-websockets" "qt6-websockets"
     "grim" "playerctl" "satty" "yq" "xdg-desktop-portal-gtk" "slurp" "mpvpaper"
     "wmctrl" "power-profiles-daemon" "easyeffects" "swayosd-git" "nautilus" "lsp-plugins" "hyprpolkitagent"
+    "thunar" "thunar-volman" "thunar-archive-plugin"
+    "vlc" "vlc-plugins-all"
+    "visual-studio-code-bin"
     "qt5-wayland" "qt5-quickcontrols" "qt5-quickcontrols2" "qt5-graphicaleffects" "qt6-wayland"
     "qt5ct" "qt6ct" "gpu-screen-recorder" "adw-gtk-theme"
 )

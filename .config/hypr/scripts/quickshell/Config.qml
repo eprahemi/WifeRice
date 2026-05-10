@@ -92,6 +92,8 @@ Item {
     property string weatherApiKey: ""
     property string weatherCityId: ""
 
+    signal weatherConfigSaved()
+
     property var keybindsData: []
     signal keybindsLoaded()
 
@@ -116,7 +118,7 @@ Item {
         sh("notify-send 'Quickshell' 'Settings Applied Successfully!'");
 
         if (config.workspaceCount !== config.initialWorkspaceCount) {
-            sh(`quickshell -p "${qsScriptsDir}/TopBar.qml" ipc call topbar queueReload`);
+            sh(`qs -p "${qsScriptsDir}/TopBar.qml" ipc call topbar queueReload`);
             config.initialWorkspaceCount = config.workspaceCount;
         }
     }
@@ -131,6 +133,7 @@ Item {
         config.updateEnvBulk(config.weatherEnvPath, envs);
         sh(`rm -rf "${cacheDir}/weather"`);
         sh("notify-send 'Weather' 'API configuration saved successfully!'");
+        config.weatherConfigSaved();
     }
 
     function saveAllKeybinds(bindsArray) {

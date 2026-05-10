@@ -86,17 +86,29 @@ Variants {
             property string activeWidget: "" 
             property bool isSettingsOpen: activeWidget === "settings"
 
-            property real settingsSlideProgress: isSettingsOpen ? 1.0 : 0.0
+            property real settingsSlideProgress: 0.0
             Behavior on settingsSlideProgress { 
                 enabled: barWindow.startupCascadeFinished
-                NumberAnimation { duration: 600; easing.type: Easing.OutExpo } 
+                NumberAnimation { duration: 500; easing.type: Easing.OutExpo } 
             }
 
             onIsSettingsOpenChanged: {
-                if (!barWindow.isSettingsOpen && barWindow.pendingReload) {
-                    barWindow.pendingReload = false;
-                    Quickshell.reload(true);
+                if (barWindow.isSettingsOpen) {
+                    slideTimer.restart();
+                } else {
+                    slideTimer.stop();
+                    barWindow.settingsSlideProgress = 0.0;
+                    if (barWindow.pendingReload) {
+                        barWindow.pendingReload = false;
+                        Quickshell.reload(true);
+                    }
                 }
+            }
+
+            Timer {
+                id: slideTimer
+                interval: 150
+                onTriggered: barWindow.settingsSlideProgress = 1.0
             }
 
             Process {
@@ -551,6 +563,7 @@ Variants {
                 }
             }
             Timer { interval: 150000; running: true; repeat: true; triggeredOnStart: true; onTriggered: { weatherPoller.running = false; weatherPoller.running = true; } }
+            Connections { target: Config; onWeatherConfigSaved: { weatherPoller.running = false; weatherPoller.running = true; } }
 
 
             Timer {
@@ -780,7 +793,7 @@ Variants {
                     property real defaultX: leftContent.x + leftContent.width + barWindow.s(4)
                     property real settingsX: mediaBox.settingsX - width - (width > 0 ? barWindow.s(4) : 0)
                                         
-                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress
+                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress * 0.78
 
                     property bool limitActive: barWindow.isSettingsOpen && barWindow.isMediaActive
 
@@ -915,7 +928,7 @@ Variants {
                     property real defaultX: workspacesBox.defaultX + workspacesBox.width + (workspacesBox.width > 0 ? barWindow.s(4) : 0)
                     property real settingsX: centerBox.settingsX - width - (width > 0 ? barWindow.s(4) : 0)
 
-                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress
+                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress * 0.78
 
                     visible: width > 0 || opacity > 0
                     opacity: barWindow.isMediaActive ? 1.0 : 0.0
@@ -1061,7 +1074,7 @@ Variants {
                     property real settingsX: barWindow.width - rightContent.width - width - barWindow.s(4)
                     property real defaultX: Math.max(minCenterDefaultX, pureCenter)
                     
-                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress
+                    x: defaultX + (settingsX - defaultX) * barWindow.settingsSlideProgress * 0.78
                     
                     property bool showLayout: false
                     opacity: showLayout ? 1 : 0

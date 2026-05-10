@@ -2,7 +2,7 @@
 
 # File paths
 SETTINGS_FILE="$HOME/.config/hypr/settings.json"
-WEATHER_SCRIPT="$HOME/.config/hypr/scripts/quickshell/calendar/weather.sh"
+WEATHER_SCRIPT="$HOME/.config/hypr/scripts/weather.sh"
 ENV_FILE="$HOME/.config/hypr/scripts/quickshell/calendar/.env"
 
 # Target configuration files
@@ -48,6 +48,7 @@ compile_settings() {
         -e "s|{{XDG_VIDEOS_DIR}}|$VID_DIR|g" \
         -e "s|{{WALLPAPER_DIR}}|$WP_DIR|g" \
         -e "s|{{SCRIPT_DIR}}|$HOME/.config/hypr/scripts|g" \
+        -e "s|{{SHADER_CACHE}}|$HOME/.cache/nvidia|g" \
         "$TMPL_DIR/env.conf.template" > "${ENV_CONF}.tmp"
     
     # Use awk to safely substitute the multi-line HW_ENV array without breaking escapes
