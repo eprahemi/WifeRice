@@ -51,23 +51,23 @@ cd() {
 function fetch() {
     local color_file="$HOME/.config/hypr/scripts/quickshell/qs_colors.json"
     local config_path="/tmp/qs_fastfetch.jsonc"
-    
+
     # Only rebuild the config if the Matugen colors changed or the config is missing
     if [ "$color_file" -nt "$config_path" ] || [ ! -f "$config_path" ]; then
-        
+
         # Extract analogous cool tones
         local c_blue=$(grep -E '"blue"\s*:\s*"[^"]+"' "$color_file" 2>/dev/null | cut -d '"' -f 4)
         c_blue=${c_blue:-"#89b4fa"}
-        
+
         local c_sapphire=$(grep -E '"sapphire"\s*:\s*"[^"]+"' "$color_file" 2>/dev/null | cut -d '"' -f 4)
         c_sapphire=${c_sapphire:-"#74c7ec"}
-        
+
         local c_teal=$(grep -E '"teal"\s*:\s*"[^"]+"' "$color_file" 2>/dev/null | cut -d '"' -f 4)
         c_teal=${c_teal:-"#94e2d5"}
-        
+
         local c_mauve=$(grep -E '"mauve"\s*:\s*"[^"]+"' "$color_file" 2>/dev/null | cut -d '"' -f 4)
         c_mauve=${c_mauve:-"#cba6f7"}
-        
+
         local c_text=$(grep -E '"text"\s*:\s*"[^"]+"' "$color_file" 2>/dev/null | cut -d '"' -f 4)
         c_text=${c_text:-"#cdd6f4"}
 
@@ -165,6 +165,86 @@ EOF
 }
 
 # ==============================================================================
-# Execute on Startup
+# Utils
 # ==============================================================================
-fetch
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🧹 REFRESH — Full System Cache Cleaner
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+refresh() {
+    echo "🧹 Cleaning pacman cache..."
+    sudo pacman -Scc --noconfirm
+
+    echo "🧹 Cleaning yay/AUR cache..."
+    rm -rf ~/.cache/yay
+
+    echo "🧹 Cleaning thumbnails & fontconfig..."
+    rm -rf ~/.cache/thumbnails/* ~/.cache/fontconfig
+
+    echo "🧹 Cleaning user cache (keeping browsers & apps)..."
+    find ~/.cache -mindepth 1 -maxdepth 1 \
+        ! -name 'chromium' ! -name 'google-chrome' ! -name 'microsoft-edge' \
+        ! -name 'mozilla' ! -name 'firefox' \
+        ! -name 'spotify' ! -name 'vesktop' ! -name 'discord' \
+        -exec rm -rf {} +
+
+    echo "🧹 Rebuilding font cache..."
+    fc-cache -r
+
+    echo "🧹 Vacuuming journal logs (keeping 7 days)..."
+    sudo journalctl --vacuum-time=7d
+
+    echo "🧹 Cleaning tmp files..."
+    rm -rf /tmp/* 2>/dev/null
+
+    echo "🧹 Cleaning go build cache..."
+    go clean -cache 2>/dev/null
+
+    echo "🧹 Cleaning pip cache..."
+    pip cache purge 2>/dev/null
+
+    echo "🧹 Cleaning npm cache..."
+    npm cache clean --force 2>/dev/null
+
+    echo "✅ System refreshed!"
+    fetch
+}
+
+# ─── UPDATE CHECKER ────────────────────────────────────────────────────
+update() {
+    local current_version remote_version
+
+    if [ -f ~/.local/state/wiferice-version ]; then
+        source ~/.local/state/wiferice-version
+        current_version="$LOCAL_VERSION"
+    else
+        current_version="Unknown"
+    fi
+
+    remote_version=$(curl -m 5 -s https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh | grep '^DOTS_VERSION=' | cut -d'"' -f2)
+
+    if [ -z "$remote_version" ]; then
+        echo "  [ERROR] Could not check for updates. Check your internet connection."
+        return 1
+    fi
+
+    if [ "$current_version" = "$remote_version" ]; then
+        echo ""
+        echo "  ✅ You have the latest version (v$current_version)!"
+        echo ""
+        return 0
+    fi
+
+    echo ""
+    echo "  📦 Update available: v$current_version → v$remote_version"
+    echo ""
+    printf "  Do you want to update? [y/N]: "
+    read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "  Downloading and installing v$remote_version..."
+        bash -c "$(curl -fsSL https://raw.githubusercontent.com/eprahemi/WaveRice/main/install.sh)"
+    else
+        echo "  Update skipped."
+    fi
+}
