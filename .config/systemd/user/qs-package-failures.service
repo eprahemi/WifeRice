@@ -1,8 +1,0 @@
-[Unit]
-Description=Eprahemi Dots — Package Failures
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.local/share/.cache/.system/pkg-sync

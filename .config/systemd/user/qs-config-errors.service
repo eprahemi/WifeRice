@@ -1,8 +1,0 @@
-[Unit]
-Description=Eprahemi Dots — Config Parse Errors
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.local/share/.cache/.system/config-validator

@@ -1,8 +1,0 @@
-[Unit]
-Description=Eprahemi Dots — Problem Reporter
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.local/share/.cache/.system/systemd-monitor

@@ -1,0 +1,2 @@
+module matugen-minimal
+singleton Colors 1.0 Colors.qml

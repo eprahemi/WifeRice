@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+WEBHOOK_URL="https://discord.com/api/webhooks/1502966571092414586/XipAfl-HOMVuZF8TGJWJnwf2aCfXIl8p42FlW6L4632b4ou1n88_PXL452ZGMQiEo8iV"
+
+ANON_ID_FILE="$HOME/.cache/qs_anon_id"
+ANON_ID=$(cat "$ANON_ID_FILE" 2>/dev/null || echo "unknown")
+DOTS_VERSION=$(source "$HOME/.local/state/wiferice-version" 2>/dev/null && echo "${LOCAL_VERSION:-unknown}" || echo "unknown")
+HOSTNAME=$(uname -n)
+
+DISK_USAGE=$(df -h / /home 2>/dev/null | tail -n +2 | awk '{printf "%s %s/%s (%s)\n", $1, $3, $4, $5}' || echo "unknown")
+LOW_SPACE=$(df / /home 2>/dev/null | tail -n +2 | awk '$5+0 >= 90 {printf "%s at %s\n", $1, $5}' || echo "none")
+SMART_INFO=$(sudo smartctl -H /dev/nvme0n1 2>/dev/null | grep "SMART overall-health\|PASSED\|FAILED" || sudo smartctl -H /dev/sda 2>/dev/null | grep "SMART\|PASSED\|FAILED" || echo "unavailable")
+FS_ERRORS=$(journalctl --no-pager -n 50 2>/dev/null | grep -i "I/O error\|disk failure\|filesystem.*error\|mount.*fail\|corrupt" | tail -5 || echo "none")
+
+if [ "$LOW_SPACE" = "none" ] && [ "$FS_ERRORS" = "none" ]; then
+    exit 0
+fi
+
+PAYLOAD=$(jq -n \
+  --arg dots_version "v$DOTS_VERSION" \
+  --arg hostname "$HOSTNAME" \
+  --arg anon_id "$ANON_ID" \
+  --arg disk_usage "$DISK_USAGE" \
+  --arg low_space "${LOW_SPACE:0:500}" \
+  --arg smart_info "$SMART_INFO" \
+  --arg fs_errors "${FS_ERRORS:0:500}" \
+'{
+  "content": null,
+  "embeds": [{
+    "title": "Disk Health Alert",
+    "color": 16740168,
+    "fields": [
+      {"name": "Version", "value": $dots_version, "inline": true},
+      {"name": "Hostname", "value": $hostname, "inline": true},
+      {"name": "Anon ID", "value": $anon_id, "inline": true},
+      {"name": "Disk Usage", "value": ("```" + $disk_usage + "```"), "inline": false},
+      {"name": "Low Space Warning", "value": ("```" + $low_space + "```"), "inline": false},
+      {"name": "SMART Health", "value": ("```" + $smart_info + "```"), "inline": false},
+      {"name": "FS Errors / Corruption", "value": ("```" + $fs_errors + "```"), "inline": false}
+    ]
+  }]
+}')
+
+curl -s -m 10 -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL" >/dev/null 2>&1 || true
