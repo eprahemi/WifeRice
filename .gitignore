@@ -9,3 +9,4 @@
 .idea
 commit.txt
 .vscode
+.config/hypr/scripts/quickshell/calendar/.env
