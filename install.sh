@@ -3,7 +3,7 @@
 # ==============================================================================
 # Script Versioning & Initialization
 # ==============================================================================
-DOTS_VERSION="1.7.4"
+DOTS_VERSION="1.7.5"
 VERSION_FILE="$HOME/.local/state/wiferice-version"
 
 # ==============================================================================
@@ -1289,6 +1289,37 @@ else
         rm -rf "$WALLPAPER_CLONE_DIR"
         printf "  -> Random wallpapers installed to %-12s ${C_GREEN}[ OK ]${RESET}\n" "$WALLPAPER_DIR"
     fi
+fi
+
+# --- 3.5 Old Dotfiles Cleanup (ilyamiro/WaveRice era) ---
+echo -e "\n${C_CYAN}[ INFO ]${RESET} Cleaning up legacy dotfiles..."
+LEGACY_CLEANED=false
+
+if [ -f "$HOME/.local/state/imperative-dots-version" ]; then
+    rm -f "$HOME/.local/state/imperative-dots-version"
+    echo "  -> Removed legacy version file (imperative-dots-version) ${C_GREEN}[ OK ]${RESET}"
+    LEGACY_CLEANED=true
+fi
+
+if [ -f "$HOME/.local/state/waverice-version" ]; then
+    rm -f "$HOME/.local/state/waverice-version"
+    echo "  -> Removed legacy version file (waverice-version) ${C_GREEN}[ OK ]${RESET}"
+    LEGACY_CLEANED=true
+fi
+
+if [ -d "$HOME/.hyprland-dots-ilyamiro-backup" ]; then
+    rm -rf "$HOME/.hyprland-dots-ilyamiro-backup"
+    echo "  -> Removed legacy backup directory (ilyamiro-backup) ${C_GREEN}[ OK ]${RESET}"
+    LEGACY_CLEANED=true
+fi
+
+if [ -d "$HOME/.cache/imperative-dots" ]; then
+    rm -rf "$HOME/.cache/imperative-dots"
+    LEGACY_CLEANED=true
+fi
+
+if [ "$LEGACY_CLEANED" = false ]; then
+    echo "  -> No legacy files found, skipping. ${C_GREEN}[ OK ]${RESET}"
 fi
 
 # --- 4. Copying Dotfiles & Backups ---
