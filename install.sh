@@ -595,15 +595,15 @@ if [ -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" ]; then
         sudo mkdir -p /usr/share/wallpapers
         sudo cp -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" /usr/share/wallpapers/lock.png
     fi
-    # SDDM login theme — only install on first run, preserve user customizations
-    if [ -d "$INSTALL_DIR/SDDM/matugen-minimal" ] && [ ! -d "/usr/share/sddm/themes/matugen-minimal" ]; then
+    # SDDM login theme — always deploy to pick up theme updates
+    if [ -d "$INSTALL_DIR/SDDM/matugen-minimal" ] && command -v sudo &>/dev/null; then
         sudo mkdir -p /usr/share/sddm/themes/matugen-minimal
         sudo cp -rf "$INSTALL_DIR/SDDM/matugen-minimal/"* /usr/share/sddm/themes/matugen-minimal/
         sudo cp -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" /usr/share/sddm/themes/matugen-minimal/
         sudo mkdir -p /etc/sddm.conf.d
         echo "[Theme]" | sudo tee /etc/sddm.conf.d/theme.conf > /dev/null
         echo "Current=matugen-minimal" | sudo tee -a /etc/sddm.conf.d/theme.conf > /dev/null
-        echo -e "  ${G}✓${N} SDDM theme 'matugen-minimal' installed"
+        echo -e "  ${G}✓${N} SDDM theme 'matugen-minimal' deployed"
     fi
 fi
 

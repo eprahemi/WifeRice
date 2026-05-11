@@ -344,7 +344,7 @@ Rectangle {
                             Repeater {
                                 model: 5
                                 Rectangle {
-                                    width: 4; height: width; radius: width / 2
+                                    width: 6; height: width; radius: width / 2
                                     color: Qt.rgba(Colors.text.r, Colors.text.g, Colors.text.b, 0.7)
 
                                     SequentialAnimation {
@@ -410,7 +410,7 @@ Rectangle {
                             Canvas {
                                 anchors.fill: parent
                                 anchors.margins: 2
-                                opacity: passwordField.text.length > 0 ? 0.10 : 0.0
+                                opacity: passwordField.text.length > 0 ? 0.20 : 0.0
                                 Behavior on opacity { NumberAnimation { duration: 300 } }
 
                                 property real wavePhase: 0.0
