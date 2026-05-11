@@ -1,7 +1,14 @@
 {
-  "latest_version": "1.7.8",
+  "latest_version": "1.7.9",
   "videos": [],
   "changelog": [
+    {
+      "version": "1.7.9",
+      "changes": [
+        "FIXED: Real-time low battery alerts now play sounds alongside notifications (battery_fetch.sh)",
+        "ADDED: mpg123 package for lightweight MP3 playback in battery alerts"
+      ]
+    },
     {
       "version": "1.7.8",
       "changes": [
