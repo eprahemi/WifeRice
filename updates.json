@@ -1,7 +1,13 @@
 {
-  "latest_version": "1.7.5",
+  "latest_version": "1.7.8",
   "videos": [],
   "changelog": [
+    {
+      "version": "1.7.8",
+      "changes": [
+        "FIXED: SDDM login wallpaper preserved on reinstall — theme files update but wallpaper (any filename) is never overwritten"
+      ]
+    },
     {
       "version": "1.4.3",
       "changes": [

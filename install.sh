@@ -5,7 +5,7 @@
 #  One-liner: bash -c "$(curl -fsSL https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh)"
 # ===========================================================================
 
-DOTS_VERSION="1.7.7"
+DOTS_VERSION="1.7.8"
 DOTS_VERSION_NAME=""
 
 set -e
@@ -599,7 +599,10 @@ if [ -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" ]; then
     if [ -d "$INSTALL_DIR/SDDM/matugen-minimal" ] && command -v sudo &>/dev/null; then
         sudo mkdir -p /usr/share/sddm/themes/matugen-minimal
         sudo cp -rf "$INSTALL_DIR/SDDM/matugen-minimal/"* /usr/share/sddm/themes/matugen-minimal/
-        sudo cp -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" /usr/share/sddm/themes/matugen-minimal/
+        # Preserve user's existing SDDM wallpaper regardless of filename; only deploy default if no image exists
+        if ! ls /usr/share/sddm/themes/matugen-minimal/*.png /usr/share/sddm/themes/matugen-minimal/*.jpg /usr/share/sddm/themes/matugen-minimal/*.jpeg >/dev/null 2>&1; then
+            sudo cp -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" /usr/share/sddm/themes/matugen-minimal/
+        fi
         sudo mkdir -p /etc/sddm.conf.d
         echo "[Theme]" | sudo tee /etc/sddm.conf.d/theme.conf > /dev/null
         echo "Current=matugen-minimal" | sudo tee -a /etc/sddm.conf.d/theme.conf > /dev/null
