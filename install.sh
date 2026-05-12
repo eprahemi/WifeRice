@@ -535,7 +535,13 @@ for component in Hyprland Kitty Neovim Rofi SwayNC Matugen; do
             cp /tmp/hyprland_settings.bak "$TARGET/settings.json"
             rm -f /tmp/hyprland_settings.bak
         fi
-        echo -e "  ${G}✓${N} $component restored"
+        # Integrity check: verify key files were actually written
+        if [ "$component" = "Hyprland" ] && [ ! -f "$TARGET/hyprland.conf" ]; then
+            echo -e "  ${R}[FAIL]${N} hyprland.conf missing after restore — cp may have failed"
+            echo -e "  ${R}[FAIL]${N} Your Hyprland config may be broken. Re-run install or manually restore."
+        else
+            echo -e "  ${G}✓${N} $component restored"
+        fi
     fi
 done
 
