@@ -1,7 +1,13 @@
 {
-  "latest_version": "1.7.24",
+  "latest_version": "1.7.25",
   "videos": [],
   "changelog": [
+    {
+      "version": "1.7.25",
+      "changes": [
+        "ADDED: Re-added 'Tip: Type update in your terminal' hint in Guide About section"
+      ]
+    },
     {
       "version": "1.7.24",
       "changes": [
