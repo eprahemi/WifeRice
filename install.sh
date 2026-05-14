@@ -616,6 +616,9 @@ echo ""
 echo -e "${G}[17/18]${N} Setting up wallpapers..."
 echo ""
 
+# Lock screen wallpaper directory
+mkdir -p "$HOME/.Wallpapers"
+
 # Only copy default wallpapers on first install (user has no Wallpapers folder yet)
 if [ ! -d "$HOME/Pictures/Wallpapers" ]; then
     mkdir -p "$HOME/Pictures/Wallpapers"

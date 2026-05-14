@@ -152,6 +152,7 @@ echo ""
 echo "  [7/10] Setting up wallpapers for picker (Super+W)..."
 echo ""
 
+mkdir -p "$HOME/.Wallpapers"
 mkdir -p "$HOME/Pictures/Wallpapers"
 
 if [ -d "$SCRIPT_DIR/Wallpapers" ]; then
