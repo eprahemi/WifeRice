@@ -273,10 +273,10 @@ if [ -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" ]; then
     fi
 fi
 
-# Only clear wallpaper picker thumbnail cache on first install
-if [ ! -d "$HOME/Pictures/Wallpapers" ]; then
+# Clear wallpaper picker cache on first install or when folder was empty (user deleted all)
+if [ ! -d "$HOME/Pictures/Wallpapers" ] || [ -z "$(ls -A "$HOME/Pictures/Wallpapers" 2>/dev/null)" ]; then
     rm -rf "$HOME/.cache/wallpaper_picker"
-    echo -e "  ${G}✓${N} Wallpaper picker cache cleared (first install)"
+    echo -e "  ${G}✓${N} Wallpaper picker cache cleared"
 fi
 
 # Pre-generate thumbnails for local wallpapers (avoids slow lazy load on first Super+W)
@@ -311,6 +311,14 @@ if command -v magick &>/dev/null || command -v convert &>/dev/null; then
     if [ "$thumbnail_count" -gt 0 ]; then
         echo -e "  ${G}✓${N} $thumbnail_count wallpaper thumbnails pre-generated"
     fi
+    
+    # Record source directory so qs_manager knows thumbnails are fresh
+    echo "$HOME/Pictures/Wallpapers" > "$HOME/.cache/wallpaper_picker/thumbs/.source_dir"
+    
+    # Build manifest of all generated thumbnail filenames
+    ls -1 "$HOME/.cache/wallpaper_picker/thumbs/" \
+        | grep -v '^\.source_dir$' | grep -v '^\.manifest$' \
+        > "$HOME/.cache/wallpaper_picker/thumbs/.manifest" 2>/dev/null || true
 fi
 
 # Install awww wallpaper setter if missing
@@ -319,10 +327,21 @@ if ! command -v awww &>/dev/null; then
     yay -S --noconfirm awww-git 2>/dev/null || true
 fi
 
-# Set first wallpaper if none is set
-FIRST_WALL=$(find "$HOME/Pictures/Wallpapers" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \) -print -quit 2>/dev/null)
-if [ -n "$FIRST_WALL" ] && command -v awww &>/dev/null; then
-    awww "$FIRST_WALL" 2>/dev/null || true
+# Ensure awww daemon is running for wallpaper setting
+if command -v awww &>/dev/null; then
+    # Start daemon if not already running (it'll fork to background)
+    awww init 2>/dev/null || true
+    sleep 0.5
+fi
+
+# Set Himeno as active desktop wallpaper
+HIMENO_FILE="$HOME/Pictures/Wallpapers/Himeno Hot Face.png"
+if [ -f "$HIMENO_FILE" ] && command -v awww &>/dev/null; then
+    awww img "$HIMENO_FILE" --transition-type fade --transition-pos 0.5,0.5 --transition-fps 60 --transition-duration 1 2>/dev/null || true
+    cp "$HIMENO_FILE" "$HOME/.cache/current_wallpaper.png" 2>/dev/null || true
+    echo -e "  ${G}✓${N} Himeno wallpaper set as desktop background"
+elif [ -n "$FIRST_WALL" ] && command -v awww &>/dev/null; then
+    awww img "$FIRST_WALL" --transition-type fade --transition-pos 0.5,0.5 --transition-fps 60 --transition-duration 1 2>/dev/null || true
     echo -e "  ${G}✓${N} First wallpaper applied"
 fi
 

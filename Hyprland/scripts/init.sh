@@ -8,6 +8,29 @@ FLAG="$HOME/.local/state/wallpaper_initialized"
 CACHE_IMG="$HOME/.cache/current_wallpaper.png"
 RELOAD_SCRIPT_PATH="$HOME/.config/hypr/scripts/quickshell/wallpaper/matugen_reload.sh"
 
+# ─── WALLPAPER PICKER CACHE PRUNE ──────────────────────────────────────
+# Remove thumbnails for wallpapers deleted from ~/Pictures/Wallpapers/
+WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+THUMB_DIR="$HOME/.cache/wallpaper_picker/thumbs"
+if [ -d "$THUMB_DIR" ] && [ -f "$THUMB_DIR/.manifest" ]; then
+    while IFS= read -r thumb; do
+        [ -z "$thumb" ] && continue
+        src_file="$WALLPAPER_DIR/$thumb"
+        if [ ! -f "$src_file" ]; then
+            rm -f "$THUMB_DIR/$thumb" "$THUMB_DIR/000_$thumb" 2>/dev/null
+        fi
+    done < <(grep -v '^\.' "$THUMB_DIR/.manifest" 2>/dev/null)
+    # Rebuild manifest
+    find "$THUMB_DIR" -maxdepth 1 -type f \
+        ! -name '.source_dir' ! -name '.manifest' \
+        -printf "%f\n" > "$THUMB_DIR/.manifest" 2>/dev/null || true
+fi
+
+# Save wallpapers list in a fast-access cache for the picker (avoid slow find)
+find "$WALLPAPER_DIR" -maxdepth 1 -type f \
+    \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" \) \
+    -printf "%f\n" 2>/dev/null | sort > "$HOME/.cache/wallpaper_picker/file_list.cache" 2>/dev/null || true
+
 # If the flag exists, just run matugen and the reload script, then exit
 if [ -f "$FLAG" ]; then
     # Use the cached wallpaper image for matugen
