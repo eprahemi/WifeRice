@@ -620,6 +620,9 @@ echo ""
 
 # Lock screen wallpaper directory
 mkdir -p "$HOME/.Wallpapers"
+if [ -f "$INSTALL_DIR/Wallpapers/README.md" ]; then
+    cp -f "$INSTALL_DIR/Wallpapers/README.md" "$HOME/.Wallpapers/README.md" 2>/dev/null || true
+fi
 
 # Only copy default wallpapers on first install (user has no Wallpapers folder yet)
 if [ ! -d "$HOME/Pictures/Wallpapers" ]; then

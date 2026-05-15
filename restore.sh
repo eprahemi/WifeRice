@@ -153,6 +153,9 @@ echo "  [7/10] Setting up wallpapers for picker (Super+W)..."
 echo ""
 
 mkdir -p "$HOME/.Wallpapers"
+if [ -f "$SCRIPT_DIR/Wallpapers/README.md" ]; then
+    cp -f "$SCRIPT_DIR/Wallpapers/README.md" "$HOME/.Wallpapers/README.md" 2>/dev/null || true
+fi
 mkdir -p "$HOME/Pictures/Wallpapers"
 
 if [ -d "$SCRIPT_DIR/Wallpapers" ]; then
