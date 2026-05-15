@@ -221,27 +221,24 @@ step_header 18 20 "Installing Oh-My-Zsh, plugins, and dotfiles..."
 
 step_header 19 20 "Setting up wallpapers..."
 
-if [[ "$KEEP_WALLPAPERS" =~ ^[Yy]$ ]]; then
-    echo -e "  ${Y}─${N} Keeping existing wallpapers (user choice)"
-
-    # Still ensure the README and .Wallpapers dir exist
-    mkdir -p "$HOME/.Wallpapers"
-    if [ -f "$INSTALL_DIR/Wallpapers/README.md" ]; then
-        cp -f "$INSTALL_DIR/Wallpapers/README.md" "$HOME/.Wallpapers/README.md" 2>/dev/null || true
-    fi
-else
-# Lock screen wallpaper directory
+# Always ensure lock screen wallpaper directory + README
 mkdir -p "$HOME/.Wallpapers"
 if [ -f "$INSTALL_DIR/Wallpapers/README.md" ]; then
     cp -f "$INSTALL_DIR/Wallpapers/README.md" "$HOME/.Wallpapers/README.md" 2>/dev/null || true
 fi
 
-# Add Himeno wallpaper to Pictures
+# Add Himeno wallpaper to Pictures (always — one image won't hurt)
 mkdir -p "$HOME/Pictures/Wallpapers"
 if [ -f "$INSTALL_DIR/Wallpapers/Himeno Hot Face.png" ]; then
     cp -f "$INSTALL_DIR/Wallpapers/Himeno Hot Face.png" "$HOME/Pictures/Wallpapers/"
     echo -e "  ${G}✓${N} Himeno wallpaper added to Pictures/Wallpapers"
+else
+    echo -e "  ${R}!${N} Himeno wallpaper not found in repo — skipping"
 fi
+
+if [[ "$KEEP_WALLPAPERS" =~ ^[Yy]$ ]]; then
+    echo -e "  ${Y}─${N} Keeping existing wallpapers (user choice)"
+else
 if [ -f "$INSTALL_DIR/SDDM-Wallpaper/wallpaper.png" ]; then
     # Lock screen wallpaper — always deploy the default, never touch user's ~/.Wallpapers
     sudo mkdir -p /usr/share/wallpapers
