@@ -5,7 +5,7 @@
 #  One-liner: bash -c "$(curl -fsSL https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh)"
 # ===========================================================================
 
-DOTS_VERSION="1.7.43"
+DOTS_VERSION="1.7.44"
 DOTS_VERSION_NAME=""
 
 set -e
@@ -289,6 +289,18 @@ else
     [ -f /tmp/qs_colors_backup ] && mv /tmp/qs_colors_backup "$QS_TARGET/qs_colors.json" 2>/dev/null || true
 fi
 echo -e "  ${G}✓${N} All QuickShell QML files deployed (Floating.qml, GuidePopup.qml, Main.qml, Lock.qml, TopBar.qml)"
+
+# Restart watchers that might have stale code in running processes
+for watcher in audio_autoswitch.sh; do
+    pids=$(pgrep -f "$watcher" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        kill $pids 2>/dev/null || true
+        sleep 0.2
+    fi
+    if [ -f "$QS_TARGET/watchers/$watcher" ]; then
+        nohup bash "$QS_TARGET/watchers/$watcher" >/dev/null 2>&1 &
+    fi
+done
 
 step_header 18 20 "Deploying scripts and extras..."
 
