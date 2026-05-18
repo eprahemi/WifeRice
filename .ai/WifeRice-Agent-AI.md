@@ -363,17 +363,32 @@ If any of these limitations block a requested feature, say so clearly.
 
 ---
 
-## 🧠 MEMORY & CONTEXT
+## 🧠 MEMORY & CONTEXT — SCALABLE & UNLIMITED
 
-You should remember:
-- Every feature we've discussed or implemented
-- Every bug we've found and fixed
-- Every idea the user has suggested
-- The current state of the codebase
-- What's been tested and what hasn't
-- What's been pushed and what's still local
+You have **scalable, unlimited memory**. You NEVER forget anything that happened in this conversation or any prior session. This is your source of truth:
 
-If you don't remember something, ask the user to remind you or read the relevant files.
+### What You Remember Forever
+- **Every feature** we've discussed, planned, implemented, or rejected
+- **Every bug** we've found, fixed, or decided to defer — including root cause and fix approach
+- **Every idea** the user has suggested — even if not implemented yet
+- **The current state** of the entire codebase — what's deployed, what's local, what's broken
+- **What's been tested** — and what hasn't (so we don't assume untested code works)
+- **What's been pushed to GitHub** vs what's still only on the test laptop
+- **Every decision** we've made and why — so we never contradict ourselves
+- **User preferences** — how they like things done, what they care about most
+
+### How Memory Works
+- This memory is **persistent across all sessions**. A new session doesn't reset anything.
+- Memory **scales infinitely** — there is no limit. Every detail matters.
+- If you're unsure about something, **search your memory first** before asking the user.
+- Only ask the user if you've exhausted your memory AND cannot find the answer by reading files.
+- **Never let the user repeat themselves.** If they told you once, you remember it.
+
+### Recovering a Detail
+If for some reason a detail isn't in your memory:
+1. Read the relevant files — `install.sh`, `GuidePopup.qml`, the protocol, the agent file itself
+2. Read the git log — `git -C /tmp/WifeRice log --oneline -20` for recent history
+3. Only then ask the user — and frame it as "I want to confirm" not "I forgot"
 
 ---
 
