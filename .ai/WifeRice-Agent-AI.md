@@ -206,13 +206,13 @@ observer.observe(document.querySelectorAll('.fade-in'));
 - **Asciinema cast ID:** `673913` (in home.html)
 - **Report webhook URL:** Line ~210 of `report.html` (Discord webhook)
 - **GitHub badges:** shields.io URLs in home.html (~lines 96-98)
-- **Last updated:** Static `<span id="last-updated">2026-05-16</span>` on most pages — NOT auto-generated
+- **Last updated:** Static `<span id="last-updated">2026-05-18</span>` on most pages — NOT auto-generated, must be updated manually on every change
 - **Install one-liner:** `bash -c 'eval "$(curl -fsSL https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh)"'`
 
 #### What to Update When
 | Scenario | Files to Edit |
 |----------|------|
-| New release | `changelog.html`, `features.html`, `showcase.html`, update "last-updated" dates |
+| New release | `changelog.html`, `features.html`, `showcase.html`, **`updates.json`** (latest_version + entry), **`home.html`** (changelog card text), **GuidePopup.qml** (changelog entry), update "last-updated" dates. Cross-check: `install-dots.html` + `faq.html` for policy changes |
 | New screenshot | Add PNG to `screenshots/`, add to `screenshots.html`, `showcase.html`, `home.html` |
 | New video | Add MKV to `Showcast Videos/`, add to `showcase.html` |
 | New FAQ | Add item in `faq.html` |
@@ -655,10 +655,12 @@ For fast reference, the file is at:
 Key entry points in this file:
 - **CORE RULES** → lines 10-50
 - **KNOWLEDGE BASE** → lines 80-220
-- **VERSION HISTORY** → lines 167-174
+- **WEBSITE STRUCTURE** → lines 155-224
 - **DEVELOPMENT WORKFLOW** → lines 302-340
 - **MEMORY** → lines 370-400
 - **DAILY SESSION START** → lines 402-415
+- **AUDIT LOG (8 fixes)** → lines 597-639
+- **Current version: 1.7.51** → line 636
 
 To sync this to the repo:
 ```bash
