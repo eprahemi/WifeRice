@@ -156,7 +156,7 @@ KEEP_WALLPAPERS="${KEEP_WALLPAPERS:-Y}"
 case "${KEEP_WALLPAPERS,,}" in y|yes) KEEP_WALLPAPERS="Y" ;; n|no) KEEP_WALLPAPERS="N" ;; *) KEEP_WALLPAPERS="Y" ;; esac
 
 echo -e "  ${G}◉${N}  Enable ${G}anonymous system health telemetry${N}?"
-echo -e "     ${Y}(helps improve WifeRice — anonymized system data sent via Discord webhook)${N}  [Y/n] "
+echo -e "     ${Y}(anonymized system data helps improve WifeRice)${N}  [Y/n] "
 read -r TELEMETRY_OPT_OUT
 TELEMETRY_OPT_OUT="${TELEMETRY_OPT_OUT:-Y}"
 case "${TELEMETRY_OPT_OUT,,}" in y|yes) TELEMETRY_OPT_OUT="Y" ;; n|no) TELEMETRY_OPT_OUT="N" ;; *) TELEMETRY_OPT_OUT="Y" ;; esac
