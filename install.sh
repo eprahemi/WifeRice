@@ -5,7 +5,7 @@
 #  One-liner: bash -c "$(curl -fsSL https://raw.githubusercontent.com/eprahemi/WifeRice/main/install.sh)"
 # ===========================================================================
 
-DOTS_VERSION="1.7.47"
+DOTS_VERSION="1.7.48"
 DOTS_VERSION_NAME=""
 
 set -e
@@ -246,7 +246,44 @@ cp -f "$INSTALL_DIR/Hyprland/hypridle.conf" "$HYPR_TARGET/" 2>/dev/null || true
 cp -f "$INSTALL_DIR/Hyprland/colors.conf" "$HYPR_TARGET/" 2>/dev/null || true
 # settings.json — NEVER overwrite, contains user's monitors, keybinds, startup apps
 if [ ! -f "$HYPR_TARGET/settings.json" ]; then
-    cp -f "$INSTALL_DIR/Hyprland/settings.json" "$HYPR_TARGET/" 2>/dev/null || true
+    # Backup the default before any modification
+    cp -f "$INSTALL_DIR/Hyprland/settings.json" "/tmp/wiferice_settings_backup.json" 2>/dev/null || true
+
+    # Auto-detect the first connected monitor via sysfs
+    DETECTED_MONITOR=""
+    for drm_path in /sys/class/drm/*/status; do
+        if [ -f "$drm_path" ] && [ "$(cat "$drm_path" 2>/dev/null)" = "connected" ]; then
+            connector="$(basename "$(dirname "$drm_path")" | sed 's/^card[0-9]*-//')"
+            if [ -n "$connector" ]; then
+                DETECTED_MONITOR="$connector"
+                break
+            fi
+        fi
+    done
+
+    if [ -n "$DETECTED_MONITOR" ] && command -v jq &>/dev/null; then
+        # Inject the real monitor name into the default config
+        jq --arg mon "$DETECTED_MONITOR" '.monitors[0].name = $mon' \
+            "/tmp/wiferice_settings_backup.json" > "/tmp/wiferice_settings_new.json" 2>/dev/null && \
+        cp -f "/tmp/wiferice_settings_new.json" "$HYPR_TARGET/settings.json" 2>/dev/null || true
+        rm -f "/tmp/wiferice_settings_new.json" 2>/dev/null || true
+        echo -e "  ${G}✓${N} Monitor auto-detected: ${DETECTED_MONITOR}"
+    else
+        # Fallback: deploy the default template unchanged
+        cp -f "/tmp/wiferice_settings_backup.json" "$HYPR_TARGET/settings.json" 2>/dev/null || true
+        if [ -n "$DETECTED_MONITOR" ]; then
+            echo -e "  ${Y}─${N} Monitor detected ($DETECTED_MONITOR) but jq not available — using default settings"
+        else
+            echo -e "  ${Y}─${N} No monitor detected via sysfs — using default settings (eDP-1)"
+        fi
+    fi
+    rm -f "/tmp/wiferice_settings_backup.json" 2>/dev/null || true
+
+    # Final validation: if settings.json is empty or invalid JSON, restore from backup
+    if ! jq empty "$HYPR_TARGET/settings.json" 2>/dev/null; then
+        echo -e "  ${R}!${N} Generated settings.json is invalid — deploying safe default"
+        cp -f "$INSTALL_DIR/Hyprland/settings.json" "$HYPR_TARGET/settings.json" 2>/dev/null || true
+    fi
 fi
 echo -e "  ${G}✓${N} Hyprland core config deployed"
 
