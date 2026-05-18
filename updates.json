@@ -1,7 +1,73 @@
 {
-  "latest_version": "1.7.28",
+  "latest_version": "1.7.50",
   "videos": [],
   "changelog": [
+    {
+      "version": "1.7.50",
+      "changes": [
+        "CRITICAL FIX: hyprctl reload does NOT apply monitor scale changes — settings_watcher now runs hyprctl keyword monitor for each monitor from settings.json after reload, forcing the correct scale to take effect immediately",
+        "CRITICAL FIX: Fixes the 'everything oversized' bug (Chrome, kitty, fonts, notifications too big after update)",
+        "CRITICAL FIX: install.sh now also calls settings_watcher.sh --compile after scripts deploy to regenerate monitors.conf"
+      ]
+    },
+    {
+      "version": "1.7.49",
+      "changes": [
+        "CRITICAL FIX: GuidePopup.qml update buttons used double quotes for bash -c \"$(curl ...)\" — install.sh double quotes terminated the string prematurely, crashing the terminal",
+        "CRITICAL FIX: Changed to single quotes + eval to prevent quoting crash",
+        "CRITICAL FIX: install.sh never called settings_watcher.sh --compile after deploying settings.json — monitors.conf stayed stale, runtime scale stuck at old value",
+        "CHANGED: settings.json always overwritten with auto-detected monitor name (backup to /tmp/, validation restores backup if invalid)"
+      ]
+    },
+    {
+      "version": "1.7.48",
+      "changes": [
+        "ADDED: Auto-detect monitor name on fresh install — reads first connected display from sysfs, injects real name into settings.json instead of hardcoded eDP-1",
+        "ADDED: Falls back to default if detection fails or jq is missing",
+        "ADDED: Final validation checks JSON is valid before deploying"
+      ]
+    },
+    {
+      "version": "1.7.47",
+      "changes": [
+        "CHANGED: settings.json was only deployed if not exists — preserving user keybinds, startup apps, and monitor config",
+        "NOTE: Reverted in v1.7.49 — settings.json now overwritten every time to push monitor/scaling fixes to all users"
+      ]
+    },
+    {
+      "version": "1.7.46",
+      "changes": [
+        "FIXED: audio_autoswitch.sh reacted to EVERY pactl event — including user-initiated default-sink changes",
+        "FIXED: USB headset → Bluetooth manual switch was overridden on any subsequent event",
+        "CHANGED: Now only reacts to sink 'new' (device plugged) and 'remove' (device unplugged) events",
+        "CHANGED: Telemetry prompt moved to beginning of install",
+        "FIXED: Opting out of telemetry now also removes old scripts and timers from previous installs"
+      ]
+    },
+    {
+      "version": "1.7.45",
+      "changes": [
+        "ADDED: Telemetry opt-out prompt before script deployment",
+        "ADDED: Matugen version detection (v2 vs v3) — v3 users get a compatibility warning",
+        "FIXED: Telemetry was deployed unconditionally without asking user"
+      ]
+    },
+    {
+      "version": "1.7.44",
+      "changes": [
+        "FIXED: Updating watcher scripts deployed new files but old processes kept running with stale code",
+        "ADDED: Step 17 now pgrep-kills then nohup-restarts all watcher scripts after deploying updated files",
+        "FIX: Takes effect immediately after running install.sh"
+      ]
+    },
+    {
+      "version": "1.7.43",
+      "changes": [
+        "FIXED: audio_autoswitch.sh only matched headphone/headset/bluez/bluetooth as external audio sinks",
+        "FIXED: USB audio devices (e.g. GeneralPlus USB Audio Device) were ignored — script stayed on built-in audio",
+        "ADDED: 'usb' to the external device pattern so USB audio sinks are now detected and auto-switched"
+      ]
+    },
     {
       "version": "1.7.28",
       "changes": [
